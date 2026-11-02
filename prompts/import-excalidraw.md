@@ -1,6 +1,6 @@
 ---
 description: Redraw an Excalidraw board as an editorial diagram at a chosen format, size, and detail level
-argument-hint: "<excalidraw-file> [--format=html|svg|png|html+png] [--size=<preset>] [--detail=faithful|balanced|simplified] [--audience=engineer|mixed|executive] [--type=<diagram-type>] [--variant=light|dark|full] [--output=<path>]"
+argument-hint: "<excalidraw-file> [--format=html|svg] [--size=<preset>] [--detail=faithful|balanced|simplified] [--audience=engineer|mixed|executive] [--type=<diagram-type>] [--variant=light|dark|full] [--output=<path>]"
 ---
 
 Redraw the Excalidraw scene at `$1`. Locate the available `diagram-design` skill using its `SKILL.md` path advertised by Pi. Read that `SKILL.md`, then read `references/import-excalidraw.md` and `references/output-spec.md` relative to its directory. Treat those references as the source of truth. Do not assume the package lives under the current working directory.

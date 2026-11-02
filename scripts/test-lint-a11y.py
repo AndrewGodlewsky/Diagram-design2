@@ -15,7 +15,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 LINTER = ROOT / "scripts/lint-skin.py"
 BUILD_ICONS = ROOT / "scripts/build-icons.py"
-MOTION_TEMPLATE = ROOT / "skills/diagram-design/assets/template-motion.html"
 
 VALID_SVG = """\
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img"
@@ -223,99 +222,20 @@ def main() -> int:
             '<path d="M0 0h1v1z"/></svg>\n',
             directory,
         )
-        template_source = MOTION_TEMPLATE.read_text(encoding="utf-8")
-        controller_match = re.search(
-            r"<script\b[^>]*data-diagram-controls[^>]*>(.*?)</script\s*>",
-            template_source,
-            re.IGNORECASE | re.DOTALL,
-        )
-        if controller_match is None:
-            raise AssertionError("canonical motion controller could not be extracted")
-        controller_body = controller_match.group(1)
-        canonical_script = f"<script data-diagram-controls>{controller_body}</script>\n"
-        motion_svg = VALID_SVG.replace("fixture-title", "motion-controls-title").replace(
-            "fixture-desc", "motion-controls-desc"
-        )
-        require_pass(
-            "motion-controls",
-            motion_svg + canonical_script,
-            directory,
-        )
-        duplicate_svg = VALID_SVG.replace(
-            "fixture-title", "duplicate-controller-title"
-        ).replace("fixture-desc", "duplicate-controller-desc")
-        require_lint_finding(
-            "duplicate-controller",
-            duplicate_svg + canonical_script + canonical_script,
-            "script: only one canonical motion controller is allowed",
-            directory,
-        )
-        unscoped_svg = VALID_SVG.replace("fixture-title", "unscoped-script-title").replace(
-            "fixture-desc", "unscoped-script-desc"
-        )
-        require_lint_finding(
-            "unscoped-script",
-            unscoped_svg + "<script>void 0;</script>\n",
-            "script: only the canonical data-diagram-controls attribute is allowed",
-            directory,
-        )
-        controller_attacks = {
-            "network-controller": "fetch('/collect');",
-            "dynamic-html-controller": "document.body.innerHTML = '<p>changed</p>';",
-            "import-controller": "import('./remote.js');",
-            "eval-controller": "eval('1 + 1');",
-            "navigation-controller": "location.assign('https://example.invalid');",
-            "modified-controller": "void 0;",
-        }
-        for name, injected in controller_attacks.items():
-            attack_svg = VALID_SVG.replace(
-                "fixture-title", f"{name}-title"
-            ).replace("fixture-desc", f"{name}-desc")
-            modified = controller_body.replace("(() => {", f"(() => {{\n      {injected}", 1)
-            require_lint_finding(
-                name,
-                attack_svg + f"<script data-diagram-controls>{modified}</script>\n",
-                "script: motion controller must exactly match template-motion.html",
-                directory,
-            )
-        unclosed_svg = VALID_SVG.replace("fixture-title", "unclosed-script-title").replace(
-            "fixture-desc", "unclosed-script-desc"
-        )
-        require_lint_finding(
-            "unclosed-motion-script",
-            unclosed_svg + f"<script data-diagram-controls>{controller_body}\n",
-            "script: motion controller must have a closing script tag",
-            directory,
-        )
-        remote_svg = VALID_SVG.replace("fixture-title", "remote-script-title").replace(
-            "fixture-desc", "remote-script-desc"
-        )
-        require_lint_finding(
-            "remote-script",
-            remote_svg
-            + f'<script data-diagram-controls src="https://example.invalid/c.js">{controller_body}</script>\n',
-            "script: only the canonical data-diagram-controls attribute is allowed",
-            directory,
-        )
-        type_svg = VALID_SVG.replace("fixture-title", "script-type-title").replace(
-            "fixture-desc", "script-type-desc"
-        )
-        require_lint_finding(
-            "script-type-override",
-            type_svg
-            + f'<script data-diagram-controls type="application/json">{controller_body}</script>\n',
-            "script: only the canonical data-diagram-controls attribute is allowed",
-            directory,
-        )
+        for script in ('<script>void 0;</script>', '<script data-diagram-controls>void 0;</script>',
+                       '<script src="https://example.invalid/x.js"></script>', '<script>unclosed'):
+            require_lint_finding("static-script", VALID_SVG + script,
+                                 "script: scripts are not allowed in static output", directory)
 
         inter_svg = VALID_SVG.replace("fixture-title", "inter-tight-title").replace(
             "fixture-desc", "inter-tight-desc"
         )
-        require_pass(
+        require_lint_finding(
             "inter-tight",
             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600&display=swap">\n'
             '<style>text { font-family: "Inter Tight", sans-serif; }</style>\n'
             + inter_svg,
+            "external-asset: external HTTP(S) <link> is not allowed",
             directory,
         )
         lookalike_svg = VALID_SVG.replace(

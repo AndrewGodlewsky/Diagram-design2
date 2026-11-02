@@ -11,13 +11,13 @@ Use it from an **editable clone** (this checkout). Managed marketplace installs 
 | I want to… | Jump |
 |---|---|
 | Wire this clone into Claude, Codex, Cursor, Cline, Kiro, OpenCode, or Copilot | [R0](#r0-editable-install) |
-| Confirm Python, Playwright, PNG export | [R1](#r1-doctor) |
+| Confirm Python and local SVG export | [R1](#r1-doctor) |
 | Draw the first diagram in a real project | [R2](#r2-first-diagram-in-a-project) |
 | Match a brand | [R3](#r3-onboard-a-skin) |
 | Choose type / pattern / size without rereading the whole skill | [R4](#r4-selection-cheat-sheet) |
 | Browse shipped examples | [R5](#r5-gallery-and-templates) |
 | Redraw draw.io or Mermaid | [R6](#r6-import) |
-| Hand off SVG or PNG | [R7](#r7-export) |
+| Hand off SVG | [R7](#r7-export) |
 | Check a generated HTML file | [R8](#r8-taste-and-geometry-gates) |
 | Paste a request to an agent | [R9](#r9-prompt-pack) |
 
@@ -41,12 +41,12 @@ This repository does not duplicate `SKILL.md` into host-specific loader stubs. F
 | **OpenCode** | Project `.opencode/skills/` or global `~/.config/opencode/skills/` | Link or copy the inner skill; copied installs must be replaced to update. |
 | **GitHub Copilot** | Marketplace plugin; project `.github/skills/`, `.agents/skills/`, or `.claude/skills/`; user `~/.copilot/skills/`, `~/.agents/skills/`, or `~/.claude/skills/` | Use the marketplace for managed updates or link the inner skill for editable work. |
 
-Marketplace installs (Claude `/plugin`, `copilot plugin install`, `codex plugin add`, `droid plugin install`) stay the right path if you do **not** need to edit `style-guide.md` in-tree. Use profiles instead. For the hosts in the matrix that have no marketplace package, `npx skills add cathrynlavery/diagram-design` does the same job in one command - it installs the inner skill into every root you select, symlinking them to one canonical copy by default and copying independently under `--copy`. That install is standalone: it belongs to the CLI rather than to your checkout or to any marketplace, so it does not follow marketplace updates automatically. Refresh it with `npx skills update diagram-design`.
+Marketplace installs (Claude `/plugin`, `copilot plugin install`, `codex plugin add`, `droid plugin install`) stay the right path if you do **not** need to edit `style-guide.md` in-tree. Use profiles instead. For the hosts in the matrix that have no marketplace package, `npx skills add AndrewGodlewsky/Diagram-design2` does the same job in one command - it installs the inner skill into every root you select, symlinking them to one canonical copy by default and copying independently under `--copy`. That install is standalone: it belongs to the CLI rather than to your checkout or to any marketplace, so it does not follow marketplace updates automatically. Refresh it with `npx skills update diagram-design`.
 
 ### Unix (user-global inner skill)
 
 ```bash
-git clone https://github.com/cathrynlavery/diagram-design.git ~/code/diagram-design
+git clone https://github.com/AndrewGodlewsky/Diagram-design2.git ~/code/diagram-design
 DIAGRAM_SKILL=~/code/diagram-design/skills/diagram-design
 mkdir -p ~/.claude/skills ~/.cursor/skills ~/.agents/skills ~/.cline/skills \
   ~/.kiro/skills ~/.config/opencode/skills ~/.copilot/skills
@@ -88,16 +88,7 @@ Pi still registers the **repo root**: `pi install <clone-path>`.
 
 ## R1. Doctor
 
-Ask in any host: `run diagram-design doctor` or `/diagram-design:doctor` / `/doctor`.
-
-The procedure is [`references/doctor.md`](../skills/diagram-design/references/doctor.md). It must not install packages. Typical local setup for PNG export:
-
-```bash
-python -m pip install playwright
-python -m playwright install chromium
-```
-
-On Windows, `python` is the usual interpreter; the skill also accepts `python3` when that is what the host has.
+Ask `run diagram-design doctor` or `/diagram-design:doctor` / `/doctor`. The [doctor procedure](../skills/diagram-design/references/doctor.md) checks Python 3.10+, packaged scripts, authoring files, and a static sample without installing packages or launching a browser. On Windows use the working `python` or `python3` interpreter rather than a Store alias.
 
 ---
 
@@ -105,7 +96,7 @@ On Windows, `python` is the usual interpreter; the skill also accepts `python3` 
 
 Work in the **project that will own the HTML**, not inside `skills/diagram-design/assets/` unless you are contributing an example.
 
-1. **Style-guide gate** ([SKILL.md §0](../skills/diagram-design/SKILL.md)). If the working copy is still shipped defaults (paper `#f5f5f5`, ink `#2d3142`, accent `#bf4520`), the agent must pause and offer onboarding, a profile, or an explicit default. Skip the gate when a valid `.diagram-design` marker selects a profile (including `profile: default`).
+1. **Resolve local style** ([SKILL.md §0](../skills/diagram-design/SKILL.md)): use supplied session tokens, a selected local profile, or shipped defaults. Read profiles directly; never alter the installed guide.
 2. **Confirm before drawing** ([SKILL.md §3](../skills/diagram-design/SKILL.md)): visual type, optional semantic pattern, size preset, and what the complexity budget will cut.
 3. **Load** the matching `references/type-*.md` before writing SVG. If a semantic pattern applies, load [`semantic-patterns.md`](../skills/diagram-design/references/semantic-patterns.md) first.
 4. **Write** a self-contained HTML file in the project (for example `docs/diagrams/<name>.html`). Do not silently overwrite gallery examples.
@@ -127,18 +118,17 @@ Full flow: [`onboarding.md`](../skills/diagram-design/references/onboarding.md).
 
 Say one of:
 
-- `Onboard diagram-design to https://example.com`
 - `Extract diagram-design tokens from the local design-system folder <path>`
 - `Use these tokens: paper … ink … accent …` (manual)
 - `Proceed with the default skin` (optionally write `profile: default` with consent)
 
-Then: propose the style-guide diff, wait for approval, write `references/style-guide.md` **or** save a named profile and point the project marker at it. Prefer profiles when this clone is shared or when plugin updates would clobber a customized working copy.
+Use the effective guide in session, or save a named external profile and select it with the project marker when requested. Never write branding into the installed package.
 
 ---
 
 ## R4. Selection cheat sheet
 
-Do not duplicate the 40-type table here. Open [SKILL.md §3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
+Use the current type selection table. Open [SKILL.md §3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
 
 **Behavior first** (then nearest type):
 
@@ -156,29 +146,18 @@ Do not duplicate the 40-type table here. Open [SKILL.md §3](../skills/diagram-d
 
 **Size** ([output-spec.md](../skills/diagram-design/references/output-spec.md)): `doc-inline` for docs, `slide-16x9` for decks, `social-og` for cards, `fit` for Figma SVG. Size changes type ramp, not just viewBox.
 
-**Motion:** default is static. Load [`animation.md`](../skills/diagram-design/references/animation.md) only when the user asked for motion or ordered change is otherwise unclear.
 
 ---
 
 ## R5. Gallery and templates
 
-From the clone root:
-
-```bash
-# macOS / Linux
-open skills/diagram-design/assets/index.html
-xdg-open skills/diagram-design/assets/index.html
-
-# Windows
-start skills/diagram-design/assets/index.html
-```
+The [local gallery](../skills/diagram-design/assets/index.html) links to every static example. You can view it in your preferred local viewer; authoring does not require opening it.
 
 Copy a scaffold, then replace the SVG:
 
 ```bash
 cp skills/diagram-design/assets/template.html my-diagram.html
 cp skills/diagram-design/assets/template-full.html my-diagram.html
-cp skills/diagram-design/assets/template-motion.html my-diagram.html
 ```
 
 Shipped examples are `assets/example-<type>.html` plus `-dark` and `-full` variants. Treat them as specimens, not scratch files.
@@ -191,7 +170,7 @@ Load [`import-drawio.md`](../skills/diagram-design/references/import-drawio.md),
 
 | Dial | Typical values |
 |---|---|
-| Format | `html` · `svg` · `png` · `html+png` |
+| Format | `html` · `svg` |
 | Size | `doc-inline` · `slide-16x9` · `social-og` · `fit` · … |
 | Detail | `faithful` · `balanced` · `simplified` |
 | Audience | `engineer` · `mixed` · `executive` |
@@ -204,15 +183,14 @@ Extractors in this checkout: `skills/diagram-design/scripts/drawio_extract.py`, 
 
 ## R7. Export
 
-**Never export unprompted.** Procedure: [`export.md`](../skills/diagram-design/references/export.md).
+Export only when requested. Follow [export.md](../skills/diagram-design/references/export.md). SVG export keeps the diagram, scoped CSS, accessible name, and local definitions. Fonts use installed faces with generic fallbacks. It requires no browser or third-party package.
 
-- SVG: first `<svg>` only, XML-escaped Google Fonts `@import`, diagram-only (no full-page cards).
-- PNG: Playwright screenshot of that SVG box, transparent background. Motion HTML: `?motion=static`, wait for `document.fonts.ready`, `data-frame="static"`.
-
-```
+```text
 /diagram-design:export-diagram path/to/diagram.html
-/diagram-design:export-diagram path/to/diagram.html --png-only --scale=2
+python skills/diagram-design/scripts/export_svg.py path/to/diagram.html
 ```
+
+`--registry` alone exports block metadata JSON; add `--svg-only` for both outputs.
 
 ---
 
@@ -240,7 +218,7 @@ Copy and fill. Keep one type, one size, one destination.
 
 **Deck:**
 
-> Redraw `[file].drawio` for a 16:9 slide, detail `simplified`, audience `executive`, format PNG.
+> Redraw `[file].drawio` for a 16:9 slide, detail `simplified`, audience `executive`, format SVG.
 
 **Mermaid in a README:**
 
@@ -248,7 +226,7 @@ Copy and fill. Keep one type, one size, one destination.
 
 **Brand, then diagram:**
 
-> Onboard diagram-design from `https://[site]`. If I approve the tokens, save profile `[slug]` and write `.diagram-design` with `profile: [slug]`. Then draw [type] of [topic].
+> Read brand tokens from `[local-style-file]`. Using those tokens, save profile `[slug]` and write `.diagram-design` with `profile: [slug]`. Then draw [type] of [topic].
 
 **Do not:**
 

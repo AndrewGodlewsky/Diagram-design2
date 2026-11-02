@@ -43,11 +43,6 @@ Every element is a rounded prism standing on the plate: `r = 0` for walls, furni
 
 One room or one building wears the accent. A focal room gets an `accent` tint on its floor and an accent tag; a focal building gets the accent face ramp and an accent tag. Furniture inside a focal room stays neutral, so the accent marks one thing.
 
-## Optional motion
-
-A site that is built in phases can reveal its buildings phase by phase with the pinned controller from `assets/template-motion.html` in `reveal` mode. Each building and its tag form one `data-motion-item` whose `data-step` is its phase, at most two per step. Buildings drop 16px into place and fade in, inside the 24px limit in `animation.md`.
-
-A floor plan can reveal by zone the same way. Give each zone's furniture a `step`, and the builder paints each phase as one contiguous group of boxes (it contracts a phase to one node in the depth sort, so a phase that would have to paint on both sides of a static wall fails the build) plus one group of that phase's room tags after every box. That is two motion items per phase, inside the limit of two per step. Walls and unphased rooms stay static. The static, no-JavaScript, reduced-motion, print, and export states show the finished site.
 
 ## Metadata contract
 
@@ -79,5 +74,3 @@ The silhouette verifier accepts signed decimal and scientific-notation coordinat
 - `assets/example-axonometric-plan-campus.html`, `-dark`, `-full`: campus site plan with roads, trees, and buildings tagged by phase
 - `assets/example-axonometric-plan-coffee-shop.html`, `-dark`, `-full`: a coffee shop with an entrance and queue posts, an espresso bar, round tables, a kitchen, and a restroom
 - `assets/example-axonometric-plan-warehouse.html`, `-dark`, `-full`: a fulfillment floor with dock doors, tall storage racks, a pick zone, packing stations, and shipping docks
-- `assets/example-axonometric-plan-campus-animated.html`: the campus built phase by phase
-- `assets/example-axonometric-plan-coffee-shop-animated.html`, `assets/example-axonometric-plan-warehouse-animated.html`: each floor revealed zone by zone in three phases

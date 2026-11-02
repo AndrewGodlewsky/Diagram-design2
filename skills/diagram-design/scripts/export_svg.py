@@ -14,7 +14,7 @@ Fixes the export gaps that make a fragment unsafe to open or inline:
 2. Referenceable ``<defs>`` IDs (markers, patterns, gradients, …) are prefixed
    with the file slug so several exported figures can share one host document
    without ``url(#arrow)`` resolving to the wrong declaration.
-3. HTML-only attribute syntax (``<g data-motion-item>``, ``data-step=1``) is
+3. HTML-only attribute syntax (``<g data-group>``, ``data-index=1``) is
    rewritten as XML so the standalone file parses.
 
 The algorithm matches ``references/export.md``. No third-party deps.
@@ -31,17 +31,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Callable, Iterator
 
-GOOGLE_FONTS_IMPORT = (
-    "@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1"
-    "&amp;family=Geist:wght@400;500;600"
-    "&amp;family=Geist+Mono:wght@400;500;600"
-    "&amp;family=Noto+Serif:ital@0;1"
-    "&amp;family=Noto+Sans+KR:wght@400;500;600"
-    "&amp;family=Noto+Serif+KR:wght@400"
-    "&amp;family=Noto+Sans+TC:wght@400;500;600"
-    "&amp;family=Noto+Serif+TC:wght@400"
-    "&amp;display=swap');"
-)
+from static_safety import assert_static_safe, read_local_utf8
 
 # Page chrome that must not follow a diagram fragment out of its host document.
 # The bare `svg { width; min-width }` rule is page layout too (see
@@ -73,7 +63,7 @@ def strip_css_comments(css: str) -> str:
     )
 
 # HTML-only attribute syntax that strict XML rejects: a valueless attribute
-# (`<g data-motion-item>`) or an unquoted value (`data-step=1`).
+# (`<g data-group>`) or an unquoted value (`data-index=1`).
 XML_OPAQUE_OPEN_RE = re.compile(r"<!--|<!\[CDATA\[")
 START_TAG_RE = re.compile(
     r"<([A-Za-z][\w:.-]*)"
@@ -762,10 +752,10 @@ def _css_rule_tree(css: str) -> list[_CssRule]:
         raise ValueError("diagram CSS has an unclosed rule or string")
     for rule in reversed(nodes):
         selector = rule.selector
-        if not rule.statement and selector.startswith("@") and not re.match(r"@(?:(?:-webkit-)?keyframes|font-face)\b", selector, re.IGNORECASE):
+        if not rule.statement and selector.startswith("@") and not re.match(r"@font-face\b", selector, re.IGNORECASE):
             rule.group = bool(re.match(r"@(?:media|supports|layer|container)\b", selector, re.IGNORECASE)) or any(
                 not child.selector.startswith("@") or child.group or child.statement
-                or re.match(r"@(?:(?:-webkit-)?keyframes|font-face)\b", child.selector, re.IGNORECASE) is not None
+                or re.match(r"@font-face\b", child.selector, re.IGNORECASE) is not None
                 for child in rule.children
             )
     return roots
@@ -780,169 +770,7 @@ def _css_rule_nodes(rules: list[_CssRule]) -> Iterator[_CssRule]:
             pending.extend(reversed(rule.children))
 
 
-def _keyframe_names(rules: list[_CssRule], root_id: str) -> dict[str, str]:
-    names: dict[str, str] = {}
-    for rule in _css_rule_nodes(rules):
-        keyframe = re.fullmatch(r"@(?:-webkit-)?keyframes\s+(.+)", rule.selector, re.IGNORECASE)
-        if keyframe is None:
-            continue
-        name = keyframe.group(1).strip()
-        if name[:1] in ("\"", "'") and name[-1:] == name[:1]:
-            name = name[1:-1]
-        if not re.fullmatch(r"[A-Za-z_][\w-]*", name):
-            raise ValueError(f"unsupported CSS keyframe name in SVG export: {rule.selector}")
-        names[name] = f"{root_id}-{name}"
-    return names
-
-
-def _css_segments(text: str, separator: str) -> list[str]:
-    # Separators inside strings, comments, functions or {} blocks do not split
-    # values; a custom property's {...} value is one token stream. Braces count
-    # only outside functions, as in _css_rule_tree. A stray closer is ignored;
-    # a negative depth would stop all later splitting.
-    pieces: list[str] = []
-    start, parentheses, braces = 0, 0, 0
-    quote = ""
-    escaped = False
-    comment = False
-    index = 0
-    while index < len(text):
-        char = text[index]
-        if comment:
-            if text.startswith("*/", index):
-                comment = False
-                index += 1
-        elif escaped:
-            escaped = False
-        elif char == "\\":
-            escaped = True
-        elif quote:
-            if char == quote:
-                quote = ""
-        elif text.startswith("/*", index):
-            comment = True
-            index += 1
-        elif char in "\"'":
-            quote = char
-        elif char == "(":
-            parentheses += 1
-        elif char == ")":
-            parentheses = max(0, parentheses - 1)
-        elif char == "{" and parentheses == 0:
-            braces += 1
-        elif char == "}" and parentheses == 0:
-            braces = max(0, braces - 1)
-        elif char == separator and parentheses == 0 and braces == 0:
-            pieces.append(text[start:index])
-            start = index + 1
-        index += 1
-    pieces.append(text[start:])
-    return pieces
-
-
-def _animation_component(value: str, names: dict[str, str], shorthand: bool) -> str:
-    tokens = re.compile(r"/\*.*?\*/|\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'|(?<![\w.\\-])[-_A-Za-z][\w-]*|[()]", re.DOTALL)
-    depth = 0
-    replacements: list[tuple[int, int, str]] = []
-    found_name = False
-    variable = False
-    keywords = {"linear", "ease", "ease-in", "ease-out", "ease-in-out", "step-start", "step-end", "infinite", "normal", "reverse", "alternate", "alternate-reverse", "none", "forwards", "backwards", "both", "running", "paused"}
-    for match in tokens.finditer(value):
-        token = match.group(0)
-        if token == "(":
-            depth += 1
-        elif token == ")":
-            depth -= 1
-        elif depth == 0 and not token.startswith("/*"):
-            quote = token[:1] if token[:1] in ("\"", "'") else ""
-            name = token[1:-1] if quote else token
-            function = not quote and re.match(r"\s*\(", value[match.end():]) is not None
-            variable = variable or (function and name.lower() == "var")
-            if function or (not quote and name.lower() == "important"
-                            and re.search(r"!\s*$", value[:match.start()])):
-                continue
-            # Unquoted none disables animation; CSS-wide values reset/inherit it.
-            # Quoted spellings are actual keyframe names and must be namespaced.
-            if not quote and name.lower() in {"none", "inherit", "initial", "unset", "revert", "revert-layer"}:
-                continue
-            if name in names:
-                if shorthand and not quote and name.lower() in keywords:
-                    raise ValueError("ambiguous CSS animation name in SVG export; use animation-name")
-                replacements.append((match.start(), match.end(), f"{quote}{names[name]}{quote}"))
-                found_name = True
-    if "\\" in strip_css_comments(value) or (variable and not found_name):
-        raise ValueError("unresolved CSS animation name in SVG export")
-    for start, end, replacement in reversed(replacements):
-        value = value[:start] + replacement + value[end:]
-    return value
-
-
-def _animation_property(prop: str) -> str:
-    # Compare decoded identifiers, retaining the authored spelling in output.
-    return decoded_css_url_fragment(strip_css_comments(prop).strip()).lower().removeprefix("-webkit-")
-
-
-def _has_animation_property(css: str) -> bool:
-    # Consume strings before declaration boundaries so property-looking text in
-    # content values remains literal. Hex escapes may include one terminator.
-    escape = r"\\(?:[0-9a-fA-F]{1,6}(?:\r\n|[ \t\r\n\f])?|[^\r\n\f])"
-    tokens = re.compile(CSS_COMMENT_OR_LITERAL_RE.pattern
-                        + rf"|(?:^|[;{{])\s*(?P<prop>(?:{escape}|[\w-])+)\s*:", re.DOTALL)
-    return any(match.group("prop") is not None
-               and _animation_property(match.group("prop")) in ("animation", "animation-name")
-               for match in tokens.finditer(css))
-
-
-def _animation_declarations(body: str, names: dict[str, str]) -> str:
-    if not names:
-        return body
-    segments = _css_segments(body, ";")
-    for index, segment in enumerate(segments):
-        parts = _css_segments(segment, ":")
-        prop, colon, value = parts[0], ":" if len(parts) > 1 else "", ":".join(parts[1:])
-        key = _animation_property(prop)
-        if colon and key in ("animation", "animation-name"):
-            value = ",".join(_animation_component(part, names, key == "animation") for part in _css_segments(value, ","))
-            segments[index] = prop + colon + value
-    return ";".join(segments)
-
-
-def namespace_inline_animations(svg: str, names: dict[str, str]) -> str:
-    if not names:
-        return svg
-    if any(re.search(r"@(?:-webkit-)?keyframes\b", block, re.IGNORECASE) or _has_animation_property(block)
-                     for block in (strip_css_comments(block) for block in STYLE_BLOCK_RE.findall(svg))):
-        raise ValueError("unsupported SVG-local animation stylesheet in SVG export")
-
-    def rewrite_tag(match: re.Match[str]) -> str:
-        tag, attrs, end = match.groups()
-
-        def rewrite_attr(attr: re.Match[str]) -> str:
-            space, key, equals, value = attr.groups()
-            if key == "style" and value is not None:
-                quote = value[0]
-
-                def decode_reference(reference: re.Match[str]) -> str:
-                    raw = reference.group(0)
-                    if raw.startswith("&#"):
-                        return html_entities.unescape(raw)
-                    return html_entities.entities.html5.get(raw[1:], raw)
-
-                # The HTML source attribute is decoded by its native parser;
-                # inspect those CSS literals, then encode once for XML output.
-                decoded = re.sub(r"&(?:#(?:[xX][0-9A-Fa-f]+|[0-9]+)|[A-Za-z][A-Za-z0-9]+);", decode_reference, value[1:-1])
-                rewritten = _animation_declarations(decoded, names)
-                encoded = (html_entities.escape(rewritten, quote=True)
-                           .replace("\t", "&#9;").replace("\n", "&#10;").replace("\r", "&#13;"))
-                return space + key + equals + quote + encoded + quote
-            return attr.group(0)
-
-        return f"<{tag}{TAG_ATTR_RE.sub(rewrite_attr, attrs)}{end}>"
-
-    return _rewrite_start_tags(svg, rewrite_tag)
-
-
-def _diagram_css_leaf(rule: _CssRule, root_id: str, names: dict[str, str], original_root_id: str, system_fonts: bool) -> str:
+def _diagram_css_leaf(rule: _CssRule, root_id: str, original_root_id: str, system_fonts: bool) -> str:
     kept: list[str] = []
     selector = rule.selector.strip()
     if rule.statement:
@@ -950,15 +778,8 @@ def _diagram_css_leaf(rule: _CssRule, root_id: str, names: dict[str, str], origi
     body = rule.css[rule.start:rule.end].strip()
     if not selector or not body:
         return ""
-    if re.match(r"@(?:-webkit-)?keyframes\b", selector, re.IGNORECASE):
-        prefix, name = selector.rsplit(None, 1)
-        quote = name[:1] if name[:1] in ("\"", "'") else ""
-        original = name[1:-1] if quote else name
-        kept.append(escape_css_for_xml(f"{prefix} {quote}{names[original]}{quote} {{ {body} }}"))
-        return "\n      ".join(kept)
     if re.match(r"@font-face\b", selector, re.IGNORECASE):
-        if not system_fonts:
-            kept.append(escape_css_for_xml(f"{selector} {{ {body} }}"))
+        kept.append(escape_css_for_xml(f"{selector} {{ {body} }}"))
         return "\n      ".join(kept)
     if selector.startswith("@"):
         print(f"warning: dropping unsupported CSS block in SVG export: {selector}", file=sys.stderr)
@@ -967,35 +788,6 @@ def _diagram_css_leaf(rule: _CssRule, root_id: str, names: dict[str, str], origi
         selector = retarget_root_selector(selector, original_root_id, root_id)
     # Preserve quoted whitespace and CSS escape terminators.
     selector = selector.strip()
-    # Nested CSS blocks are carried as text, so their declarations cannot be
-    # namespaced by the flat declaration rewriter. Refuse rather than break
-    # a binding to the keyframes that this export renames.
-    if names:
-        pending_nested = list(rule.children)
-        if any(not re.fullmatch(r"--[\w-]+\s*:", strip_css_comments(child.selector).strip())
-               for child in rule.children):
-            pending_nested.append(rule)
-        while pending_nested:
-            nested = pending_nested.pop()
-            # Braces in a custom property's value carry tokens, not CSS rules.
-            # Do not treat their token subtree as nested animation declarations.
-            if re.fullmatch(r"--[\w-]+\s*:", strip_css_comments(nested.selector).strip()):
-                continue
-            pending_nested.extend(nested.children)
-            # Scan direct declarations once; the last prefix segment is the
-            # next child selector, not a declaration. Descendants are queued.
-            segments: list[str] = []
-            cursor = nested.children[0].end + 1 if nested is rule else nested.start
-            for child in (nested.children[1:] if nested is rule else nested.children):
-                segments.extend(_css_segments(nested.css[cursor:child.start - 1], ";")[:-1])
-                cursor = child.end + 1
-            segments.extend(_css_segments(nested.css[cursor:nested.end], ";"))
-            for segment in segments:
-                parts = _css_segments(segment, ":")
-                key = _animation_property(parts[0])
-                if len(parts) > 1 and key in ("animation", "animation-name"):
-                    raise ValueError("unsupported nested CSS animation declaration in SVG export")
-    body = _animation_declarations(body, names)
     inherited = body_inherited_css(selector, body, root_id)
     if inherited:
         kept.append(escape_css_for_xml(inherited))
@@ -1005,7 +797,7 @@ def _diagram_css_leaf(rule: _CssRule, root_id: str, names: dict[str, str], origi
     return "\n      ".join(kept)
 
 
-def _diagram_css_rules(rules: list[_CssRule], root_id: str, names: dict[str, str], original_root_id: str = "", system_fonts: bool = False) -> str:
+def _diagram_css_rules(rules: list[_CssRule], root_id: str, original_root_id: str = "", system_fonts: bool = False) -> str:
     # Determine empty groups bottom-up, then emit without recursive string copies.
     nodes = list(_css_rule_nodes(rules))
     ordinary: dict[_CssRule, bool] = {}
@@ -1014,7 +806,7 @@ def _diagram_css_rules(rules: list[_CssRule], root_id: str, names: dict[str, str
     for rule in nodes:
         if rule.group and ordinary[rule] and re.match(r"@scope\b", rule.selector, re.IGNORECASE):
             raise ValueError("unsupported CSS scope with paint rules in SVG export; move paint outside @scope")
-    leaves = {rule: _diagram_css_leaf(rule, root_id, names, original_root_id, system_fonts)
+    leaves = {rule: _diagram_css_leaf(rule, root_id, original_root_id, system_fonts)
               for rule in nodes if not rule.group}
     retained: dict[_CssRule, bool] = {}
     for rule in reversed(nodes):
@@ -1058,7 +850,7 @@ def _html_css_rules(html: str) -> list[_CssRule]:
 def diagram_css_from_html(html: str, root_id: str, original_root_id: str = "", system_fonts: bool = False) -> str:
     """Carry scoped diagram CSS while retaining its existing media conditions."""
     rules = _html_css_rules(html)
-    return _diagram_css_rules(rules, root_id, _keyframe_names(rules, root_id), original_root_id, system_fonts)
+    return _diagram_css_rules(rules, root_id, original_root_id, system_fonts)
 
 
 def leading_accessibility_end(svg: str, pos: int) -> int:
@@ -1083,12 +875,8 @@ def leading_accessibility_end(svg: str, pos: int) -> int:
 
 
 def merge_style_into_defs(svg: str, style_css: str, system_fonts: bool = False) -> str:
-    """Ensure one <defs> and place a <style> with fonts + diagram CSS first.
-
-    With system_fonts the Google Fonts @import is left out, so the SVG makes no
-    network request and its font stacks fall through to installed faces.
-    """
-    parts = [] if system_fonts else [GOOGLE_FONTS_IMPORT]
+    """Ensure one <defs> and embed the diagram CSS without fetching fonts."""
+    parts = []
     if style_css.strip():
         parts.append(style_css.strip())
     if not parts:
@@ -1241,16 +1029,6 @@ def namespace_defs_ids(svg: str, prefix: str) -> str:
 
     def rewrite_tag(tag: re.Match[str], commented: bool = False) -> str:
         mapping = replacements if commented else live_replacements
-        # SMIL values describe the animated attribute, not the animation tag's
-        # own paint. Only supported paint/reference targets carry CSS URLs.
-        animation_values = {"set": {"to"}, "animate": {"from", "to", "values", "by"}}
-        target = next((decode_xml_references(attr.group(4)[1:-1])
-                       for attr in TAG_ATTR_RE.finditer(tag.group(2))
-                       if attr.group(2) == "attributeName" and attr.group(4) is not None
-                       and attr.group(4)[0] in "\"'"), "")
-        animated_attributes = (animation_values.get(tag.group(1), set())
-                               if target in CSS_URL_ATTRIBUTES else set())
-
         def rewrite_css_attribute(raw: str) -> str:
             # XML normalizes original literal whitespace before expanding
             # character references. References to controls must survive the
@@ -1275,7 +1053,7 @@ def namespace_defs_ids(svg: str, prefix: str) -> str:
                 raw = replacements[value]
             elif name.lower() in {"href", "xlink:href"} and value.startswith("#") and value[1:] in mapping:
                 raw = "#" + mapping[value[1:]]
-            elif name.lower() == "style" or name in animated_attributes:
+            elif name.lower() == "style":
                 raw = rewrite_css_attribute(raw)
             elif name.lower() in CSS_URL_ATTRIBUTES:
                 raw = url_ref.sub(lambda reference: rewrite_url(reference, commented), raw)
@@ -1524,6 +1302,7 @@ def assert_export_gate(svg: str) -> None:
 
 def export_svg_document(html: str, source_path: Path, system_fonts: bool = False) -> str:
     """Transform source HTML into a standalone SVG document string."""
+    assert_static_safe(html)
     slug = slug_for(source_path)
     root_id = f"{slug}-root"
     svg = normalize_html_entities(xmlify_attributes(extract_first_svg(html)))
@@ -1539,9 +1318,7 @@ def export_svg_document(html: str, source_path: Path, system_fonts: bool = False
     )
     svg = set_root_id(svg, root_id)
     rules = _html_css_rules(html)
-    names = _keyframe_names(rules, root_id)
-    diagram_css = _diagram_css_rules(rules, root_id, names, original_root_id, system_fonts)
-    svg = namespace_inline_animations(svg, names)
+    diagram_css = _diagram_css_rules(rules, root_id, original_root_id, system_fonts)
     svg = merge_style_into_defs(svg, diagram_css, system_fonts)
     svg = namespace_defs_ids(svg, slug)
     svg = xml_safe_comments(svg)
@@ -1553,6 +1330,7 @@ def export_svg_document(html: str, source_path: Path, system_fonts: bool = False
         ET.fromstring(document)
     except ET.ParseError as exc:
         raise ValueError(f"exported SVG is not well-formed XML: {exc}") from exc
+    assert_static_safe(document, xml=True)
     return document
 
 
@@ -1570,7 +1348,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--system-fonts",
         action="store_true",
-        help="omit the Google Fonts @import so the SVG makes no network request",
+        help="compatibility alias; exports always use locally installed fonts",
     )
     args = parser.parse_args(argv)
 
@@ -1587,7 +1365,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        html = source.read_text(encoding="utf-8")
+        html = read_local_utf8(source)
         document = export_svg_document(html, source, system_fonts=args.system_fonts)
     except RecursionError:
         print("error: diagram CSS nesting exceeds the supported export depth", file=sys.stderr)

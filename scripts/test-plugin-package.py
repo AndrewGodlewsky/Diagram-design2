@@ -763,7 +763,12 @@ def ci_version_gate_script() -> str:
         raise AssertionError(f"ci.yml {VERSION_GATE_STEP!r} step has no run block")
     lines = body.splitlines()
     indent = len(lines[0]) - len(lines[0].lstrip())
-    script = "\n".join(line[indent:] for line in lines) + "\n"
+    script_lines = []
+    for line in lines:
+        if line.strip() and len(line) - len(line.lstrip()) < indent:
+            break
+        script_lines.append(line[indent:])
+    script = "\n".join(script_lines) + "\n"
     return script.replace("${{ github.event_name }}", "pull_request")
 
 

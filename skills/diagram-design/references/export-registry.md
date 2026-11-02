@@ -6,10 +6,10 @@ Emit a machine-readable `.registry.json` sidecar of a Traceable block decomposit
 
 Load this file when:
 
-- The user invokes `/diagram-design:export-diagram <html-file> --registry` (alone or combined with `--svg-only`/`--png-only`/`--scale`/`--output`).
+- The user invokes `/diagram-design:export-diagram <html-file> --registry` (alone or combined with `--svg-only`/`--output`).
 - The user asks in natural language for the block metadata, ID list, registry, or traceability data behind a Traceable block decomposition diagram (see [`semantic-patterns.md` § 8](semantic-patterns.md)) as structured data rather than a picture.
 
-This reference governs `--registry` only. SVG/PNG rasterization is a separate procedure — see [`export.md`](export.md). The two can run in the same command invocation but share no logic; treat this as independent, not an extension of that one.
+This reference governs `--registry` only. SVG export is a separate procedure — see [`export.md`](export.md). The two can run in the same command invocation but share no logic; treat this as independent, not an extension of that one.
 
 ## Scope
 
@@ -66,8 +66,8 @@ No other keys, and no generation timestamp: the registry is meant to be regenera
 - **No `data-block-id` attributes anywhere in the source**: refuse and tell the user; don't write an empty `{"blocks": []}` file. This is very likely `--registry` requested on a diagram that doesn't use the pattern at all — say so.
 - **Duplicate `data-block-id` values**: emit every matching entry in document order; don't deduplicate or pick one. A duplicate ID is a correctness problem for `scripts/verify-block-registry.py` to catch, not for export to silently resolve.
 - **`data-block-parent` pointing at an ID absent from the file, or a parent cycle**: emit the data exactly as authored, including the broken or cyclic reference. Same reasoning as duplicates — export mirrors the source; `scripts/verify-block-registry.py` is the structural check, and running it is a separate, explicit step, not implied by `--registry` itself.
-- **Source is `assets/index.html`** (the gallery): refuse, same as the SVG/PNG path — ask which specific diagram file.
-- **`--registry` combined with `--svg-only` or `--png-only`**: independent outputs — produce the registry JSON in addition to whichever raster/vector format was requested. `--registry` has no interaction with `--scale`; it produces no image.
+- **Source is `assets/index.html`** (the gallery): refuse, same as the SVG path — ask which specific diagram file.
+- **`--registry` combined with `--svg-only`**: independent outputs — produce the registry JSON in addition to the requested SVG. Registry JSON contains no image.
 
 ## What this never does
 
@@ -75,4 +75,4 @@ No other keys, and no generation timestamp: the registry is meant to be regenera
 - Correlates a block's metadata against its drawn position or connector geometry. Out of scope for the registry entirely, not just deferred — the JSON is a metadata projection, not a geometry audit.
 - Writes a generation timestamp, tool version, or any field not literally sourced from a `data-block-*` attribute.
 - Modifies the source HTML.
-- Auto-emits `.registry.json` without `--registry` explicitly passed. Manual on every call, same as SVG/PNG export.
+- Auto-emits `.registry.json` without `--registry` explicitly passed. Manual on every call, same as SVG export.

@@ -121,7 +121,7 @@ Run `python3 scripts/verify-architecture-delta.py --all` (or pass explicit HTML 
 
 The verifier enforces the declared structure, differential semantics, grid/bounds geometry, drawn relationship endpoints, budgets, and exact ledger coverage. It rejects CSS transforms/position overrides, CSS sizing that could change bounds, escaped CSS declarations, explicit hidden objects/ledger, and common CSS hiding rules. Ordinary responsive sizing of the outer SVG remains legal.
 
-It is **not** a browser renderer or a proof of the source system. Authors remain responsible for honest signatures, labels matching those signatures, readable shape/dash treatments, and an accurate migration story. Exotic CSS cascade/variable effects, clipping and occlusion, connector crossings, intermediate segment clearance, ledger placement, and screen-reader quality still require the normal skin, accessibility, geometry, and rendered-layout gates plus desktop/mobile visual review. Keep semantic geometry in the SVG attributes instead of making CSS part of the data model.
+It is **not** a browser renderer or a proof of the source system. Authors remain responsible for honest signatures, labels matching those signatures, readable shape/dash treatments, and an accurate migration story. Exotic CSS cascade/variable effects, clipping and occlusion, connector crossings, intermediate segment clearance, ledger placement, and screen-reader quality are not fully covered by the static skin, accessibility, and geometry checks. Those checks do not replace visual judgment or prove pixel-level layout. Keep semantic geometry in the SVG attributes instead of making CSS part of the data model.
 
 ## Anti-patterns
 

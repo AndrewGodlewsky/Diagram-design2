@@ -623,7 +623,7 @@ def run_cases(h: Harness) -> int:
         "backslash",
     )
     h.expect_findings(
-        "a stylesheet link other than the font link is one finding",
+        "a data stylesheet link is one finding",
         honest().replace(
             "<svg ",
             '<link rel="stylesheet" href="data:text/css,rect%7Bwidth:300px%7D">\n'
@@ -632,14 +632,15 @@ def run_cases(h: Harness) -> int:
         ),
         1, "stylesheet link",
     )
-    h.expect_clean(
-        "the Google font stylesheet link is not a finding",
+    h.expect_findings(
+        "the Google font stylesheet link is rejected",
         honest().replace(
             "<svg ",
             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
             'family=Geist&display=swap">\n<svg ',
             1,
         ),
+        1, "stylesheet link",
     )
     h.expect_findings(
         "a <set> inside the figure is one finding",

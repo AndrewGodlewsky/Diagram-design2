@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Regression tests for Devicon viewBox preservation."""
+"""Regression tests for icon normalization and missing local sources."""
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -33,6 +36,26 @@ def main() -> int:
     if 'fill="currentColor"' not in normalized:
         raise AssertionError("normalized icon does not inherit currentColor")
     print("PASS: Devicon normalization preserves non-128 source viewBoxes")
+    missing = build_icons.VENDOR_DIR / "tabler" / "missing-test-icon.svg"
+    with patch.object(build_icons, "vendor_path", return_value=missing), \
+            patch.object(Path, "read_text", side_effect=FileNotFoundError(str(missing))), \
+            patch.object(Path, "write_text") as write:
+        try:
+            build_icons.build()
+        except FileNotFoundError as exc:
+            if "Missing vendored icon" not in str(exc) or str(missing) not in str(exc):
+                raise AssertionError(f"missing source has no actionable diagnostic: {exc}")
+        else:
+            raise AssertionError("missing vendored SVG did not fail")
+        for args in ([str(BUILD)], [str(BUILD), "--check"]):
+            diagnostic = io.StringIO()
+            with patch.object(sys, "argv", args), contextlib.redirect_stderr(diagnostic):
+                if build_icons.main() != 1:
+                    raise AssertionError("missing source must fail both build and --check")
+            if "network fetching is disabled" not in diagnostic.getvalue():
+                raise AssertionError("missing source must explain the local-only contract")
+        write.assert_not_called()
+    print("PASS: missing vendored SVG fails without writing output in either mode")
     return 0
 
 

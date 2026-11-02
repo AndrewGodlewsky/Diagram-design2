@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
 from axonometry import (FONT_LINK, FULL, MINIMAL, SKINS, Proj, Rect,  # noqa: E402
-                        animated_page, cards_html, f, finish, outline, prism, solid, styles)
+                        cards_html, f, finish, outline, prism, solid, styles)
 
 EYEBROW = "Axonometric plan · Diagram Design"
 TREE_TOP = {"light": "#bfc0c0", "dark": "#949eb2"}
@@ -89,59 +89,6 @@ def depth_sort(P, boxes: list[Box], z) -> list[Box]:
         raise ValueError("boxes form a depth cycle; split one of them")
     return [boxes[i] for i in order]
 
-
-def depth_sort_phased(P, boxes: list[Box], z) -> list[Box]:
-    """Back-to-front order that keeps every phase contiguous, so each phase can reveal as one
-    group. Boxes of one step contract to a single node; static boxes stay on their own. The
-    contracted graph must be acyclic, or a phase would have to paint on both sides of a box."""
-    n = len(boxes)
-    bb = [bbox(P, b, z) for b in boxes]
-    edges = set()
-    for i in range(n):
-        for j in range(n):
-            if i == j:
-                continue
-            a, b = boxes[i].rect, boxes[j].rect
-            ai, bj = bb[i], bb[j]
-            overlap = ai[0] < bj[2] and bj[0] < ai[2] and ai[1] < bj[3] and bj[1] < ai[3]
-            if overlap and behind(a, b) and not behind(b, a):
-                edges.add((i, j))
-    key = lambda k: (boxes[k].rect.x0 + boxes[k].rect.y0, boxes[k].rect.x0)
-    node = lambda k: ("s", boxes[k].step) if boxes[k].step else ("b", k)
-    members: dict = {}
-    for k in range(n):
-        members.setdefault(node(k), []).append(k)
-
-    def topo(nodes, succ, rank):
-        indeg = {v: 0 for v in nodes}
-        for v in nodes:
-            for w in succ[v]:
-                indeg[w] += 1
-        ready = sorted((v for v in nodes if indeg[v] == 0), key=rank)
-        order = []
-        while ready:
-            v = ready.pop(0)
-            order.append(v)
-            for w in succ[v]:
-                indeg[w] -= 1
-                if indeg[w] == 0:
-                    ready.append(w)
-            ready.sort(key=rank)
-        if len(order) != len(nodes):
-            raise ValueError("a phase must paint on both sides of another box; move it or split the phase")
-        return order
-
-    groups = list(members)
-    gsucc = {g: set() for g in groups}
-    for i, j in edges:
-        if node(i) != node(j):
-            gsucc[node(i)].add(node(j))
-    out = []
-    for g in topo(groups, gsucc, lambda g: min(key(k) for k in members[g])):
-        inner = members[g]
-        isucc = {k: {j for i, j in edges if i == k and j in inner} for k in inner}
-        out += [boxes[k] for k in topo(inner, isucc, key)]
-    return out
 
 
 def box_attrs(b: Box, z):
@@ -238,6 +185,8 @@ class Plan:
 
 
 def build_svg(plan: Plan, skin: str, motion: bool, slug: str):
+    if motion:
+        raise ValueError("Only static diagrams are supported")
     sk = SKINS[skin]
     top = plan.plate_t
     P0 = Proj(0, 0)
@@ -265,19 +214,14 @@ def build_svg(plan: Plan, skin: str, motion: bool, slug: str):
         tint = f'<path d="{outline(P, r.rect, top)}" fill="rgba({sk["acc_rgb"]},0.12)"/>' if r.focal else ""
         out.append(f"<g {attrs}>{tint}</g>")
 
-    if motion and plan.phases:
-        return build_phased(plan, P, sk, skin, top, out, vh, ox, minx)
     tags = []
     for b in depth_sort(P, plan.boxes, top):
         g = draw_box(P, b, top, sk, skin)
         if b.kind == "building":
             at = b.tag_at or ((b.rect.x0 + b.rect.x1) / 2, (b.rect.y0 + b.rect.y1) / 2)
             t = tag(P, sk, b.name, b.sub, at, top + b.h, b.focal)
-            if motion and b.step:
-                out.append(f'<g data-motion-item data-step="{b.step}" data-appear aria-label="{b.name}, {b.sub}">' + g + t + "</g>")
-            else:
-                out.append(g)
-                tags.append(t)
+            out.append(g)
+            tags.append(t)
         else:
             out.append(g)
     for r in plan.rooms:
@@ -290,65 +234,6 @@ def build_svg(plan: Plan, skin: str, motion: bool, slug: str):
         out.append(f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'Geist Mono\', monospace" letter-spacing="0.18em">{plan.caption[0]}</text>')
         out.append(f'<text x="{f(x0 + 120)}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Geist\', sans-serif" font-style="italic">{plan.caption[1]}</text>')
     return "\n        ".join(out), vh
-
-
-def caption(plan, sk, vh, x0):
-    cy = vh - 28
-    return [f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'Geist Mono\', monospace" letter-spacing="0.18em">{plan.caption[0]}</text>',
-            f'<text x="{f(x0 + 120)}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Geist\', sans-serif" font-style="italic">{plan.caption[1]}</text>']
-
-
-def build_phased(plan: Plan, P, sk, skin, top, out, vh, ox, minx):
-    """A floor revealed zone by zone: each phase's boxes paint as one contiguous group, and
-    its room tags arrive with it in a second group after every box."""
-    run, run_step = [], 0
-
-    def close():
-        if run:
-            out.append(f'<g data-motion-item data-step="{run_step}" data-appear aria-label="{plan.phases[run_step]}">' + "".join(run) + "</g>")
-            run.clear()
-
-    seen = set()
-    for b in depth_sort_phased(P, plan.boxes, top):
-        g = draw_box(P, b, top, sk, skin)
-        if b.step:
-            if b.step != run_step or not run:
-                close()
-                if b.step in seen:
-                    raise ValueError(f"phase {b.step} paints in two runs")
-                if seen and b.step < max(seen):
-                    raise ValueError(f"phase {b.step} paints after phase {max(seen)}; number phases back to front so the DOM reads in narrative order")
-                seen.add(b.step)
-                run_step = b.step
-            run.append(g)
-        else:
-            close()
-            out.append(g)
-    close()
-    staged = {}
-    for r in plan.rooms:
-        t = tag(P, sk, r.name, r.sub, r.tag_at, top, r.focal)
-        if r.step:
-            staged.setdefault(r.step, []).append((r.name, t))
-        else:
-            out.append(t)
-    for step in sorted(staged):
-        names = " and ".join(n for n, _ in staged[step])
-        out.append(f'<g data-motion-item data-step="{step}" data-appear aria-label="{names} tagged">' + "".join(t for _, t in staged[step]) + "</g>")
-    out.append("</g>")
-    if plan.caption:
-        out += caption(plan, sk, vh, ox + minx)
-    return "\n        ".join(out), vh
-
-
-APPEAR_CSS = """
-    /* Static source is the finished plan. Only an initialized enhancement hides
-       the buildings, which then drop in by phase, never further than 16px. */
-    .motion-ready [data-motion-item][data-appear] { opacity: 0; transform: translateY(-16px); transition: none; }
-    .motion-ready [data-motion-item][data-appear].is-visible { opacity: 1; transform: none; transition: opacity var(--motion-step) var(--motion-ease), transform var(--motion-step) var(--motion-ease); }
-    .motion-ready[data-frame="end"] [data-motion-item][data-appear],
-    .motion-ready[data-frame="static"] [data-motion-item][data-appear] { opacity: 1; transform: none; }
-"""
 
 
 # ---------------------------------------------------------------- content
@@ -512,7 +397,6 @@ def warehouse() -> Plan:
 
 FIGURES = {"axonometric-plan": office, "axonometric-plan-campus": campus,
            "axonometric-plan-coffee-shop": coffee_shop, "axonometric-plan-warehouse": warehouse}
-ANIMATED = ("axonometric-plan-campus", "axonometric-plan-coffee-shop", "axonometric-plan-warehouse")
 
 
 def render_all() -> dict[Path, str]:
@@ -530,13 +414,6 @@ def render_all() -> dict[Path, str]:
                 html = MINIMAL.format(eyebrow=EYEBROW, title=plan.title, font=FONT_LINK, slug=slug, desc=plan.desc, vh=vh,
                                       body=body, **{k: sk[k] for k in ("paper", "ink", "muted", "accent")})
             files[ASSETS / f"example-{slug}.html"] = html
-        if name in ANIMATED:
-            plan = make()
-            slug = f"{name}-animated"
-            body, vh = build_svg(plan, "light", True, slug)
-            files[ASSETS / f"example-{slug}.html"] = animated_page(
-                plan.title, plan.desc, slug, body, vh, plan.steps, "Axonometric plan · Optional motion",
-                APPEAR_CSS, "The complete site plan is shown above.")
     return files
 
 

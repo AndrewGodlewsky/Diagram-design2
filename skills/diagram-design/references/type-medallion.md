@@ -117,25 +117,21 @@ bucket_text           at (tier_cx(i), 144)                # sublabel role, muted
 field_x               = tier_x(i) + 16                    # 16-px left inset for field text
 field_w               = 140                               # 172-px tier_w minus two 16-px insets
 field rows (absolute y):
-  tool_label  at 180,    tool_value  at 186 (foreignObject, height 24)
-  format_label at 220,   format_value at 226 (foreignObject, height 24)
-  writer_label at 260,   writer_value at 266 (foreignObject, height 24)
+  tool_label  at 180,    tool_value  at 186 (SVG text, two lines maximum)
+  format_label at 220,   format_value at 226 (SVG text, two lines maximum)
+  writer_label at 260,   writer_value at 266 (SVG text, two lines maximum)
   # gap (open whitespace below writer row, above the example section)
   example_label_text at 360,  example_line_0 at 374,  example_line_1 at 388
 ```
 
-**Field-value wrapping rule:** field values (tool / format / writer) render inside an SVG `<foreignObject>` with an HTML `<div>` so they auto-wrap when text exceeds 140 px. Each `foreignObject` is 140 wide × 24 tall (fits 2 lines in the `sublabel` role at 1.25 line-height). The 26-px gap to the next field's label absorbs the second line cleanly.
+**Field-value wrapping rule:** split tool, format, and writer values into at most two SVG `<tspan>` lines within the 140px field width. Use the `sublabel` role with a 12px baseline gap. Shorten values that do not fit; do not embed HTML or shrink the type.
 
 ```svg
-<foreignObject x="{field_x}" y="{value_top}" width="140" height="24">
-  <div xmlns="http://www.w3.org/1999/xhtml"
-       style="font-family: {sublabel}; color: {muted}; line-height: 1.25;">
-    {field_value}
-  </div>
-</foreignObject>
+<text x="{field_x}" y="{value_baseline}" font-family="{sublabel}" fill="{muted}">
+  <tspan x="{field_x}" dy="0">{first_line}</tspan>
+  <tspan x="{field_x}" dy="12">{second_line}</tspan>
+</text>
 ```
-
-The HTML namespace declaration on the `<div>` is required for SVG to render the inline content. Browsers and Playwright/Chromium render this faithfully; if your export target doesn't support `<foreignObject>` (some older Inkscape builds), hand-split long values into two `<tspan>` lines instead.
 
 Field labels use the `node-name` role at 11px in ink. Field values use the `sublabel` role in muted. Bucket and field values can be retinted by `color` override (§4).
 

@@ -10,10 +10,10 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "skills/diagram-design/scripts"))
 SELF_CHECK = ROOT / "skills/diagram-design/scripts/self_check.py"
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
-TEMPLATE = ASSET_DIR / "template-motion.html"
-EXAMPLE = ASSET_DIR / "example-policy-trace-animated.html"
+TEMPLATE = ASSET_DIR / "template.html"
 STATIC_EXAMPLE = ASSET_DIR / "example-architecture.html"
 
 
@@ -53,11 +53,9 @@ def main() -> int:
             check_pass(label, candidate)
 
     check_pass("shipped template", TEMPLATE)
-    check_pass("shipped animated example", EXAMPLE)
     check_pass("shipped static example", STATIC_EXAMPLE)
 
     static = STATIC_EXAMPLE.read_text(encoding="utf-8")
-    animated = EXAMPLE.read_text(encoding="utf-8")
 
     # Document completeness: truncation, mojibake and unbalanced markup must all fail.
     # The negative controls below are valid HTML that the balance count must not flag.
@@ -83,8 +81,8 @@ def main() -> int:
     check_mutation_fail("unclosed span", "<body>", "<body><span>tip", "<span> opens")
     check_mutation_fail("incomplete shell", "</html>", "", "does not end with </html>")
     # Titles and text areas are RCDATA: tag names in them are text, not elements.
-    check_mutation_pass("tag names in a page title", "<title>", "<title>Using <span> and <div> labels in ")
-    check_mutation_pass("tag names in a textarea", "<body>", "<body><textarea>Using <span> labels</textarea>")
+    check_mutation_pass("tag names in a page title", "<title>", "<title>Using &lt;span&gt; and &lt;div&gt; labels in ")
+    check_mutation_pass("tag names in a textarea", "<body>", "<body><textarea>Using &lt;span&gt; labels</textarea>")
     check_mutation_pass("trailing comment after the html end tag", "</html>", "</html>\n<!-- generated -->")
     check_mutation_pass("space before the html end tag's >", "</html>", "</html >")
     check_mutation_pass("newline inside the html end tag", "</html>", "</html\n>")
@@ -133,7 +131,7 @@ def main() -> int:
     check_fail(
         "remote image",
         static.replace("<body>", '<body><img src="https://tracker.example/p.gif">', 1),
-        "remote reference",
+        "non-fragment resource reference",
     )
     check_fail(
         "CSS import",
@@ -241,23 +239,14 @@ def main() -> int:
         ),
     )
     check_fail(
-        "lookalike fonts host",
-        static.replace(
-            "https://fonts.googleapis.com/css2",
-            "https://fonts.googleapis.com.evil.tld/css2",
-            1,
-        ),
-        "approved Google Fonts",
-    )
-    check_fail(
         "javascript URL",
         static.replace("<body>", '<body><a href="javascript:alert(1)">x</a>', 1),
-        "executable URL",
+        "non-fragment resource reference",
     )
     check_fail(
         "data html URL",
         static.replace("<body>", '<body><a href="data:text/html,x">x</a>', 1),
-        "executable URL",
+        "non-fragment resource reference",
     )
     check_fail(
         "iframe injection",
@@ -267,43 +256,13 @@ def main() -> int:
     check_fail(
         "arbitrary script",
         static.replace("</body>", "<script>alert(1)</script></body>", 1),
-        "canonical data-diagram-controls attribute",
+        "<script> is not allowed",
     )
     check_fail(
         "missing svg role",
         static.replace('role="img"', 'role="presentation"', 1),
         "role=img",
     )
-    check_fail(
-        "modified controller",
-        animated.replace("'motion-ready'", "'motion-ready' /* patched */", 1),
-        "exactly match the controller",
-    )
-    check_fail(
-        "second script",
-        animated.replace("</body>", "<script data-x></script></body>", 1),
-        "at most one script",
-    )
-    check_fail(
-        "hidden motion item",
-        animated.replace(
-            '<g data-motion-item data-step="1"',
-            '<g style="opacity:0" data-motion-item data-step="1"',
-            1,
-        ),
-        "hidden in source",
-    )
-    check_fail(
-        "missing noscript",
-        animated.replace("<noscript>", "<div>", 1).replace("</noscript>", "</div>", 1),
-        "<noscript>",
-    )
-    check_fail(
-        "non-decimal step count",
-        animated.replace('data-step-count="5"', 'data-step-count="٥"', 1),
-        "ASCII decimal",
-    )
-
     # Content past the viewBox is clipped silently in the render (#406).
     clipped_legend = static.replace('viewBox="0 0 1000 480"', 'viewBox="0 0 1000 400"', 1)
     check_fail("legend below the viewBox", clipped_legend, "past the viewBox bottom edge")
@@ -372,24 +331,11 @@ def main() -> int:
     else:
         print("OK: every shipped asset stays inside its viewBox")
 
-    # --offline: system-font output must make no network request, so the one
-    # remote stylesheet the default contract allows becomes a failure.
-    if module.verify(STATIC_EXAMPLE, offline=False):
-        failures.append("offline off: the Google Fonts link must still pass by default")
-    offline_errors = module.verify(STATIC_EXAMPLE, offline=True)
-    if not any("offline: file loads Google Fonts" in error for error in offline_errors):
-        failures.append(f"offline: Google Fonts link not rejected, got {offline_errors}")
-    else:
-        print("OK: offline mode rejects the Google Fonts link")
-    system_font = re.sub(r'<link[^>]*fonts\.googleapis\.com[^>]*>', "", static)
-    with tempfile.TemporaryDirectory() as scratch:
-        candidate = Path(scratch) / "candidate.html"
-        candidate.write_text(system_font, encoding="utf-8")
-        errors = module.verify(candidate, offline=True)
-    if errors:
-        failures.append(f"offline: a system-font file should pass, got {errors}")
-    else:
-        print("OK: offline mode passes a file without the font link")
+    # Compatibility flag does not change the unconditional local-only policy.
+    if module.verify(STATIC_EXAMPLE, offline=False) != module.verify(STATIC_EXAMPLE, offline=True):
+        failures.append("offline alias changed the safety contract")
+    remote_font = static.replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist"></head>')
+    check_fail("Google Fonts rejected by default", remote_font, "non-fragment resource reference")
 
     if failures:
         for failure in failures:

@@ -1,7 +1,0 @@
-{
-  "name": "diagram-design-ci",
-  "private": true,
-  "devDependencies": {
-    "@anthropic-ai/claude-code": "2.1.229"
-  }
-}

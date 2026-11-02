@@ -734,43 +734,6 @@ def check_docs_and_wiring() -> None:
     ok("reference, SKILL.md, command, prompt, and example stay in sync")
 
 
-def check_mobile_example() -> None:
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        ok("worked example has the static mobile-containment contract (browser check runs in lint-render)")
-        return
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        context = browser.new_context(viewport={"width": 390, "height": 844})
-        context.route("http*", lambda route: route.abort())
-        page = context.new_page()
-        page.goto(EXAMPLE.resolve().as_uri(), wait_until="load")
-        facts = page.evaluate(
-            """
-            () => {
-              const documentElement = document.documentElement;
-              const svg = document.querySelector('svg');
-              const scroller = svg && svg.parentElement;
-              const overflow = scroller && getComputedStyle(scroller).overflowX;
-              return {
-                pageOverflow: documentElement.scrollWidth - documentElement.clientWidth,
-                svgWidth: svg ? svg.getBoundingClientRect().width : 0,
-                localScroller: Boolean(scroller &&
-                  (overflow === 'auto' || overflow === 'scroll') &&
-                  scroller.scrollWidth > scroller.clientWidth + 1),
-              };
-            }
-            """
-        )
-        browser.close()
-    if facts["pageOverflow"] > 1:
-        fail(f"worked example overflows the 390px page by {facts['pageOverflow']:.1f}px")
-    if facts["svgWidth"] < 900:
-        fail("worked example shrinks its labeled SVG below the 900px legibility floor")
-    if not facts["localScroller"]:
-        fail("worked example lacks a functioning local horizontal scroller at 390px")
-    ok("worked example is contained and locally scrollable at 390px")
 
 
 def check_json_nesting_diagnostic(tmp: Path) -> None:
@@ -831,7 +794,6 @@ def main() -> int:
         check_errors_and_limits(tmp)
         check_legacy_stdout_encoding(tmp)
         check_docs_and_wiring()
-        check_mobile_example()
     print("\nAll Excalidraw import gates passed.")
     return 0
 

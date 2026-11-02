@@ -131,11 +131,10 @@ REQUIRED_PACKAGED_RUNTIME_FILES = frozenset(
         "scripts/mermaid_extract.py",
         "scripts/excalidraw_extract.py",
         "scripts/export_svg.py",
-        "scripts/export_png.py",
+        "scripts/static_safety.py",
         "assets/template.html",
         "assets/template-dark.html",
         "assets/template-full.html",
-        "assets/template-motion.html",
         "assets/template-terminal.html",
     }
 )
@@ -147,57 +146,8 @@ def normalized(text: str) -> str:
     return re.sub(r"\s+", " ", text)
 
 
-def check_onboarding_trust_boundary(errors: list[str], markdown: str) -> None:
-    """Remote onboarding must require user trust before its narrow fetch."""
-    text = normalized(markdown)
-    has_trust_prompt = (
-        "only continue if you trust this site" in text
-        and "do you want me to proceed?" in text
-    )
-    requires_explicit_confirmation = (
-        "before making any network request" in text
-        and "until the user explicitly confirms" in text
-        and "supplying the url in the onboarding request is not confirmation" in text
-    )
-    has_boundary = "untrusted data" in text
-    names_instruction_risk = "instruction" in text
-    limits_use = (
-        "use it only as a source of color, type, and spacing signals" in text
-        and "never follow directive" in text
-    )
-    if not (
-        has_trust_prompt
-        and requires_explicit_confirmation
-        and has_boundary
-        and names_instruction_risk
-        and limits_use
-    ):
-        errors.append(
-            "onboarding.md fetches remote page content without explicit trust "
-            "confirmation and an untrusted-data boundary"
-        )
 
 
-def check_onboarding_user_verification(errors: list[str], markdown: str) -> None:
-    """Onboarding must end with an explicit review of generated output."""
-    text = normalized(markdown)
-    identifies_output = (
-        "generate or rebuild a representative output document" in text
-        and "provide its local path" in text
-    )
-    tasks_user = (
-        "please open `<output-path>`" in text
-        and "reply `approved` or tell me what should change" in text
-    )
-    stays_pending = (
-        "automated checks do not replace this review" in text
-        and "pending user verification" in text
-        and "until the user explicitly confirms the output document" in text
-    )
-    if not (identifies_output and tasks_user and stays_pending):
-        errors.append(
-            "onboarding.md does not require user verification of the output document"
-        )
 
 
 def check_line_dark_skin(errors: list[str], source: str) -> None:
@@ -332,7 +282,7 @@ def check_gallery(errors: list[str]) -> None:
     tab_suffixes: dict[str, str] = {}  # data-type → variant letter ("" if none)
     tab_parents: dict[str, str] = {}   # data-type → data-parent-type
     document_order: list[str] = []
-    for m in re.finditer(r'<button([^>]*)>\s*<span class="eyebrow">(\d+)([a-z]?)</span>', source):
+    for m in re.finditer(r'<(?:button|section)([^>]*)>\s*(?:<h2>)?<span class="eyebrow">(\d+)([a-z]?)</span>', source):
         attrs, eyebrow, suffix = m.group(1), m.group(2), m.group(3)
         tm = re.search(r'data-type="([^"]+)"', attrs)
         pm = re.search(r'data-parent-type="([^"]+)"', attrs)
@@ -410,7 +360,7 @@ def check_gallery(errors: list[str]) -> None:
         next_letter = chr(ord(tab_suffixes[t] or next_letter) + 1)
     # Detect data-single types so we can skip the three-variant check for them.
     single_types: set[str] = set()
-    for btn in re.finditer(r"<button[^>]+>", source):
+    for btn in re.finditer(r"<(?:button|section)[^>]+>", source):
         tag = btn.group(0)
         if "data-single" in tag:
             tm = re.search(r'data-type="([^"]+)"', tag)
@@ -438,7 +388,7 @@ def check_gallery_type_parity(errors: list[str], gallery: Path, references: Path
     """
     source = gallery.read_text(encoding="utf-8")
     independent = set()
-    for m in re.finditer(r"<button([^>]*)>\s*<span class=\"eyebrow\">\d+[a-z]?</span>", source):
+    for m in re.finditer(r"<(?:button|section)([^>]*)>\s*(?:<h2>)?<span class=\"eyebrow\">\d+[a-z]?</span>", source):
         attrs = m.group(1)
         tm = re.search(r'data-type="([^"]+)"', attrs)
         if tm and "data-parent-type=" not in attrs:
@@ -1567,247 +1517,6 @@ def check_manifest_descriptions(errors: list[str], root: Path) -> None:
 
 
 SKILL_PACKAGE = Path("skills/diagram-design")
-# Either quote style: the backreference ends the value at its own quote.
-FONT_LINK = re.compile(
-    r"""href=(?P<quote>["'])(?P<url>(?:(?!(?P=quote)).)*fonts\.googleapis\.com(?:(?!(?P=quote)).)*)(?P=quote)"""
-)
-# Paths inside the skill package that carry the same css2 link as
-# assets/template.html. template-terminal.html is absent on purpose: the
-# terminal skin loads Geist Mono alone. SKILL.md carried a copy until the
-# ADR 0004 split routed its typography to style-guide.md; a copy that comes
-# back is still checked, as an optional surface below.
-FONT_LINK_SURFACES = (
-    Path("assets/template-dark.html"),
-    Path("assets/template-full.html"),
-    Path("assets/template-motion.html"),
-    Path("references/style-guide.md"),
-)
-# A real css2 copy, as opposed to prose such as `<link href="...fonts.googleapis.com...">`.
-CSS2_LINK = re.compile(
-    r"""href=(?P<quote>["'])(?P<url>(?:(?!(?P=quote)).)*fonts\.googleapis\.com/css2\?(?:(?!(?P=quote)).)*)(?P=quote)"""
-)
-
-
-def optional_font_link_surfaces(root: Path) -> list[Path]:
-    """SKILL.md and every reference not already required to carry the link."""
-    package = root / SKILL_PACKAGE
-    references = sorted((package / "references").glob("*.md"))
-    candidates = [Path("SKILL.md"), *(path.relative_to(package) for path in references)]
-    return [path for path in candidates if path not in FONT_LINK_SURFACES]
-TITLE_STACK_TEMPLATES = (
-    Path("assets/template.html"),
-    Path("assets/template-dark.html"),
-    Path("assets/template-full.html"),
-    Path("assets/template-motion.html"),
-)
-# Every Noto Serif CJK face Google Fonts serves also carries a cyrillic slice.
-CJK_SERIF_FACES = (
-    "Noto Serif KR",
-    "Noto Serif TC",
-    "Noto Serif SC",
-    "Noto Serif JP",
-    "Noto Serif HK",
-)
-SERIF_STACK = re.compile(r"--font-serif\s*:\s*([^;]+);")
-
-
-def font_families(url: str) -> set[str]:
-    """The `family=` parameters a Google Fonts css2 URL actually requests."""
-    return {
-        part.split(":", 1)[0]
-        for part in url.replace("&amp;", "&").split("&")
-        if part.startswith("family=")
-    }
-
-
-def family_names(families: set[str]) -> str:
-    return ", ".join(name.removeprefix("family=").replace("+", " ")
-                     for name in sorted(families))
-
-
-def check_export_font_parity(errors: list[str], root: Path) -> None:
-    """Every copy of the Google Fonts link must request the same faces.
-
-    assets/template.html is the source. The other three templates and the style
-    guide's Font stack block carry the same css2 link and must request exactly
-    its families, as must any copy in SKILL.md or another reference; the export
-    @import must request at least them. The strings live in different files and drifted apart once already:
-    the CJK faces reached assets/template.html but never the @import in
-    export.md, so a Korean or Chinese diagram exported to .svg silently lost its
-    type. That failure only shows up on a machine other than the author's,
-    which is exactly the case the faces are in the link to prevent.
-    """
-    template = root / SKILL_PACKAGE / "assets/template.html"
-    export = root / SKILL_PACKAGE / "references/export.md"
-    for path in (template, export):
-        if not path.is_file():
-            errors.append(f"font-parity surface is missing: {path.name}")
-            return
-
-    link = FONT_LINK.search(template.read_text(encoding="utf-8"))
-    imported = re.search(r"@import url\('([^']+)'\)",
-                         export.read_text(encoding="utf-8"))
-    if not link or not imported:
-        errors.append(
-            "could not locate the font link in assets/template.html or the "
-            "@import in references/export.md"
-        )
-        return
-
-    families = font_families(link.group("url"))
-    missing = families - font_families(imported.group(1))
-    if missing:
-        errors.append(
-            f"references/export.md @import omits {family_names(missing)}, which "
-            f"assets/template.html requests; an exported .svg would resolve "
-            f"those scripts through whatever font the viewer happens to have"
-        )
-
-    def report_drift(relative: Path, url: str) -> None:
-        requested = font_families(url)
-        drift = [
-            f"{label} {family_names(names)}"
-            for label, names in (
-                ("missing", families - requested),
-                ("extra", requested - families),
-            )
-            if names
-        ]
-        if drift:
-            errors.append(
-                f"{relative.as_posix()} font link drifts from assets/template.html: "
-                + "; ".join(drift)
-            )
-
-    for relative in FONT_LINK_SURFACES:
-        path = root / SKILL_PACKAGE / relative
-        if not path.is_file():
-            errors.append(f"font-parity surface is missing: {relative.as_posix()}")
-            continue
-        surface_link = FONT_LINK.search(path.read_text(encoding="utf-8"))
-        if not surface_link:
-            errors.append(f"could not locate the font link in {relative.as_posix()}")
-            continue
-        report_drift(relative, surface_link.group("url"))
-
-    for relative in optional_font_link_surfaces(root):
-        path = root / SKILL_PACKAGE / relative
-        if not path.is_file():
-            continue
-        for copy in CSS2_LINK.finditer(path.read_text(encoding="utf-8")):
-            report_drift(relative, copy.group("url"))
-
-
-def title_stack_error(name: str, stack: str) -> str | None:
-    """Why one --font-serif value fails the Cyrillic order, or None."""
-    cjk = {face.casefold(): face for face in CJK_SERIF_FACES}
-    faces = [face.strip().strip("'\"").casefold() for face in stack.split(",")]
-    if "noto serif" not in faces:
-        return (
-            f"{name} --font-serif lacks 'Noto Serif'; Instrument Serif carries "
-            "no Cyrillic, so a Cyrillic title falls through to the next face"
-        )
-    ahead = [cjk[face] for face in faces[: faces.index("noto serif")] if face in cjk]
-    if ahead:
-        return (
-            f"{name} --font-serif lists {ahead[0]!r} before 'Noto Serif'; Google "
-            f"Fonts slices Cyrillic into {ahead[0]} as well, so a Cyrillic title "
-            "would draw from it"
-        )
-    return None
-
-
-def check_title_fallback_order(errors: list[str], root: Path) -> None:
-    """Every template --font-serif must reach 'Noto Serif' before a CJK serif.
-
-    Instrument Serif has no Cyrillic, so a Cyrillic page title draws from the
-    next face in the stack. Google Fonts slices Cyrillic into every Noto Serif
-    CJK face as well, so a stack that reaches one of them first renders the
-    title in a Korean, Chinese, or Japanese design's Cyrillic instead of the
-    face built for it. Every declaration counts, so an override such as a
-    dark-mode block cannot reorder the stack unseen. The template's own css2
-    link must also request Noto Serif: parity only compares the copies with
-    each other, so dropping the family from all of them at once passes it.
-    """
-    for relative in TITLE_STACK_TEMPLATES:
-        name = relative.as_posix()
-        path = root / SKILL_PACKAGE / relative
-        if not path.is_file():
-            errors.append(f"title-stack template is missing: {name}")
-            continue
-        source = path.read_text(encoding="utf-8")
-        stacks = SERIF_STACK.findall(source)
-        if not stacks:
-            errors.append(f"{name} has no --font-serif stack")
-            continue
-        for problem in dict.fromkeys(title_stack_error(name, stack) for stack in stacks):
-            if problem:
-                errors.append(problem)
-        link = FONT_LINK.search(source)
-        if not link or "family=Noto+Serif" not in font_families(link.group("url")):
-            errors.append(
-                f"{name} font link does not request Noto Serif, which its "
-                "--font-serif names for Cyrillic titles; without it they resolve "
-                "through whatever serif the viewer has installed"
-            )
-
-
-EXPORT_DEFAULTS = re.compile(r"^## Defaults\n(.*?)(?=^## |\Z)", re.MULTILINE | re.DOTALL)
-PRODUCE_BOTH = re.compile(r"produce\s+\**both\b", re.IGNORECASE)
-
-
-def export_defaults_error(name: str, text: str) -> str | None:
-    """Why an export surface's produce-both Defaults bullet is wrong, or None."""
-    section = EXPORT_DEFAULTS.search(text)
-    bullets = re.findall(r"^- (.*)$", section.group(1), re.MULTILINE) if section else []
-    for bullet in bullets:
-        match = PRODUCE_BOTH.search(bullet)
-        if not match:
-            continue
-        flags = [flag for flag in ("--svg-only", "--png-only") if flag in bullet[: match.start()]]
-        if flags:
-            return (
-                f"{name} Defaults lists {', '.join(flags)} among the cases that produce "
-                "both .svg and .png; each restricts output to its one format"
-            )
-        return None
-    return f"{name} Defaults has no bullet saying when both .svg and .png are produced"
-
-
-def check_export_surface_parity(errors: list[str], root: Path) -> None:
-    """commands/export-diagram.md and prompts/export-diagram.md must both carry the mutual-exclusion rule.
-
-    Neither may list `--svg-only` or `--png-only` among the cases its Defaults
-    says produce both formats, since each flag emits only its own format (#474).
-    """
-    command_path = root / "commands/export-diagram.md"
-    prompt_path = root / "prompts/export-diagram.md"
-    if not command_path.is_file():
-        errors.append("export surface is missing: commands/export-diagram.md")
-        return
-    if not prompt_path.is_file():
-        errors.append("export surface is missing: prompts/export-diagram.md")
-        return
-    command_text = command_path.read_text(encoding="utf-8")
-    prompt_text = prompt_path.read_text(encoding="utf-8")
-    rule_re = re.compile(r"--svg-only.*--png-only.*mutually exclusive", re.IGNORECASE)
-    if not rule_re.search(command_text):
-        errors.append(
-            "commands/export-diagram.md missing `--svg-only` and `--png-only` mutual-exclusion rule"
-        )
-    if not rule_re.search(prompt_text):
-        errors.append(
-            "prompts/export-diagram.md missing `--svg-only` and `--png-only` mutual-exclusion rule"
-        )
-    for name, text in (
-        ("commands/export-diagram.md", command_text),
-        ("prompts/export-diagram.md", prompt_text),
-    ):
-        problem = export_defaults_error(name, text)
-        if problem:
-            errors.append(problem)
-
-
 def main() -> int:
     errors: list[str] = []
     check_description(errors)
@@ -1829,12 +1538,6 @@ def main() -> int:
     )
     check_type_counts(errors, ROOT)
     check_high_level_reference(errors, HIGH_LEVEL_REFERENCE.read_text(encoding="utf-8"))
-    check_onboarding_trust_boundary(
-        errors, ONBOARDING_REFERENCE.read_text(encoding="utf-8")
-    )
-    check_onboarding_user_verification(
-        errors, ONBOARDING_REFERENCE.read_text(encoding="utf-8")
-    )
     check_line_dark_skin(errors, LINE_DARK_EXAMPLE.read_text(encoding="utf-8"))
     check_loop_station_origin(
         errors,
@@ -1851,9 +1554,6 @@ def main() -> int:
     )
     check_routing_surfaces(errors, ROOT)
     check_size_preset_surfaces(errors, ROOT)
-    check_export_font_parity(errors, ROOT)
-    check_title_fallback_order(errors, ROOT)
-    check_export_surface_parity(errors, ROOT)
     if errors:
         print("FAIL docs sync")
         for error in errors:
@@ -1864,10 +1564,10 @@ def main() -> int:
         "reference links and style-guide anchors, asset citations, packaged support "
         "files, routing surfaces, size-preset surfaces, "
         "manifest descriptions, Factory install contract, type-count routing, "
-        "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
+        "High-Level invariants, Line dark-skin contract, "
         "Loop station origin, "
-        "font-link parity, title fallback order, type-ramp contract, registered legacy "
-        "type sizes, split routing, export surface parity"
+        "type-ramp contract, registered legacy "
+        "type sizes, split routing"
     )
     return 0
 

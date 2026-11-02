@@ -1,14 +1,15 @@
-"""Fetch and normalize the icon set for the diagram-design skill.
+"""Normalize the vendored local icon set for the diagram-design skill.
 
-Pulls SVGs from Tabler Icons (MIT), Simple Icons (CC0), log-z/logos (MIT),
-and Devicon (MIT), normalizes them to a 24x24 viewBox using `currentColor`
+Reads vendored SVGs attributed to Tabler Icons (MIT), Simple Icons (CC0),
+log-z/logos (MIT), and Devicon (MIT), normalizes them to a 24x24 viewBox using `currentColor`
 so they inherit ink from context, and emits two artifacts:
 
   - skills/diagram-design/references/primitive-icons.md  (catalog with snippets)
   - skills/diagram-design/assets/icons.html               (visual gallery)
 
 Run:    python scripts/build-icons.py
-Reqs:   stdlib only (urllib, re, pathlib)
+Check:  python scripts/build-icons.py --check
+Reqs:   Python standard library only; no network access
 
 Re-run any time the manifest below changes. The generated files are
 committed; users of the skill never need to run this script.
@@ -19,8 +20,6 @@ from __future__ import annotations
 import pathlib
 import re
 import sys
-import urllib.request
-import urllib.error
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
@@ -30,7 +29,7 @@ VENDOR_DIR = REPO / "scripts" / "vendor" / "icons"
 
 
 def vendor_path(slot: str, source: str, source_id: str) -> pathlib.Path:
-    """Return the local cache path for a given icon."""
+    """Return the vendored source path for a given icon."""
     if source == "tabler":
         return VENDOR_DIR / "tabler" / f"{source_id}.svg"
     if source == "simple":
@@ -40,17 +39,11 @@ def vendor_path(slot: str, source: str, source_id: str) -> pathlib.Path:
     if source.startswith("devicon"):
         variant = source.split(":")[1] if ":" in source else "plain"
         return VENDOR_DIR / "devicon" / f"{source_id}-{variant}.svg"
-    # "url" source — key by slot name so the cache is human-readable
+    # "url" records provenance only; key vendored files by readable slot name
     safe = re.sub(r"[^\w\-]", "_", slot)
     return VENDOR_DIR / "url" / f"{safe}.svg"
 
-TABLER_URL = "https://raw.githubusercontent.com/tabler/tabler-icons/main/icons/outline/{name}.svg"
-TABLER_URL_FALLBACK = "https://raw.githubusercontent.com/tabler/tabler-icons/main/icons/{name}.svg"
-SI_URL = "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/{slug}.svg"
-SI_CDN_URL = "https://cdn.jsdelivr.net/npm/simple-icons/icons/{slug}.svg"
-LOGZ_URL = "https://raw.githubusercontent.com/log-z/logos/main/website-logos/{name}.svg"
-DEVICON_URL = "https://raw.githubusercontent.com/devicons/devicon/master/icons/{name}/{name}-{variant}.svg"
-# For "url" source: source_id is the full URL; blurb should note license
+# For "url" source, source_id records provenance; it is never requested.
 
 
 # (slot_name, source, source_id, blurb)
@@ -173,39 +166,6 @@ ICONS: dict[str, list[tuple[str, str, str, str]]] = {
     ],
 }
 
-
-def fetch(url: str) -> str | None:
-    try:
-        req = urllib.request.Request(
-            url, headers={"User-Agent": "diagram-design-build/1.0 (https://github.com)"}
-        )
-        with urllib.request.urlopen(req, timeout=15) as r:
-            return r.read().decode("utf-8")
-    except urllib.error.HTTPError:
-        return None
-    except urllib.error.URLError as e:
-        print(f"  network error for {url}: {e}", file=sys.stderr)
-        return None
-
-
-def fetch_tabler(name: str) -> str | None:
-    return fetch(TABLER_URL.format(name=name)) or fetch(TABLER_URL_FALLBACK.format(name=name))
-
-
-def fetch_simple(slug: str) -> str | None:
-    return fetch(SI_URL.format(slug=slug)) or fetch(SI_CDN_URL.format(slug=slug))
-
-
-def fetch_logz(name: str) -> str | None:
-    return fetch(LOGZ_URL.format(name=name))
-
-
-def fetch_devicon(name: str, variant: str = "plain") -> str | None:
-    return fetch(DEVICON_URL.format(name=name, variant=variant))
-
-
-def fetch_url(url: str) -> str | None:
-    return fetch(url)
 
 
 def normalize_tabler(raw: str) -> str:
@@ -359,7 +319,7 @@ def normalize_logz(raw: str) -> str:
     )
 
 
-def build() -> tuple[list[str], list[str]]:
+def build() -> tuple[list[str], list[str], list[str]]:
     md_chunks: list[str] = []
     gallery_chunks: list[str] = []
     misses: list[str] = []
@@ -403,40 +363,19 @@ def build() -> tuple[list[str], list[str]]:
             elif source == "url":
                 normalize = normalize_url
                 domain = re.sub(r"https?://([^/]+)/.*", r"\1", source_id)
-                attribution = f"Direct fetch / `{domain}` — verify license before use"
+                attribution = f"Vendored SVG / `{domain}` — verify license before use"
             else:
                 raise ValueError(f"unknown source: {source}")
 
-            if vpath.exists():
-                print(f"  local   {source}/{source_id} -> {slot}", file=sys.stderr)
+            try:
                 raw = vpath.read_text(encoding="utf-8")
-            else:
-                print(f"  fetching {source}/{source_id} -> {slot}", file=sys.stderr)
-                if source == "tabler":
-                    raw = fetch_tabler(source_id)
-                elif source == "simple":
-                    raw = fetch_simple(source_id)
-                elif source == "logz":
-                    raw = fetch_logz(source_id)
-                elif source.startswith("devicon"):
-                    variant = source.split(":")[1] if ":" in source else "plain"
-                    raw = fetch_devicon(source_id, variant)
-                elif source == "url":
-                    raw = fetch_url(source_id)
-                if raw is not None:
-                    vpath.parent.mkdir(parents=True, exist_ok=True)
-                    vpath.write_text(raw, encoding="utf-8")
-
-            if raw is None:
-                misses.append(f"{slot} <- {source}/{source_id}")
-                md_chunks.append(
-                    f"### {slot}\n_NOT FOUND — please pick a fallback_\n\n"
-                )
-                gallery_chunks.append(
-                    f'<div class="cell missing"><div class="icon">∅</div>'
-                    f'<div class="name">{slot}</div></div>'
-                )
-                continue
+            except FileNotFoundError as exc:
+                raise FileNotFoundError(
+                    f"Missing vendored icon {slot!r}: {vpath}. "
+                    "Add the licensed SVG to scripts/vendor/icons before building; "
+                    "network fetching is disabled."
+                ) from exc
+            print(f"  local   {source}/{source_id} -> {slot}", file=sys.stderr)
 
             try:
                 snippet = normalize(raw)
@@ -478,7 +417,6 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Icon library · Diagram Design</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -552,7 +490,6 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
       align-items: center;
       gap: 0.5rem;
       color: var(--color-ink);
-      transition: border-color 0.12s, color 0.12s;
     }
     .cell:hover { border-color: var(--color-accent); color: var(--color-accent); }
     .cell .icon { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
@@ -583,7 +520,7 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
     <div class="header">
       <p class="eyebrow">Icons · Diagram Design</p>
       <h1>Icon library</h1>
-      <p class="subtitle">A small, monochrome library for IT/cloud illustrations. Stroked icons from <a href="https://tabler.io/icons" style="color:inherit">Tabler Icons</a> (MIT); brand silhouettes from <a href="https://simpleicons.org" style="color:inherit">Simple Icons</a> (CC0). Every icon uses <code>currentColor</code> so it inherits ink from its parent.</p>
+      <p class="subtitle">A small, monochrome library for IT/cloud illustrations. Stroked icons from Tabler Icons (MIT); brand silhouettes from Simple Icons (CC0). Every icon uses <code>currentColor</code> so it inherits ink from its parent.</p>
     </div>
     {SECTIONS}
     <footer>
@@ -596,18 +533,35 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
 
 
 def main() -> int:
+    import argparse
+    parser = argparse.ArgumentParser(description="Build the vendored local icon library.")
+    parser.add_argument("--check", action="store_true", help="Check generated files without writing them.")
+    args = parser.parse_args()
     print("Building icon library…", file=sys.stderr)
-    md_chunks, gallery_chunks, misses = build()
+    try:
+        md_chunks, gallery_chunks, misses = build()
+    except OSError as exc:
+        print(f"FAIL local icon source: {exc}", file=sys.stderr)
+        return 1
+
+    html = GALLERY_TEMPLATE.replace("{SECTIONS}", "\n".join(gallery_chunks))
+    if args.check:
+        stale = [str(path) for path, expected in ((MD_OUT, "".join(md_chunks)), (HTML_OUT, html))
+                 if not path.is_file() or path.read_text(encoding="utf-8") != expected]
+        if stale or misses:
+            print("FAIL generated icons: " + ", ".join(stale + misses), file=sys.stderr)
+            return 1
+        print("OK: generated local icon assets are current")
+        return 0
 
     MD_OUT.parent.mkdir(parents=True, exist_ok=True)
     MD_OUT.write_text("".join(md_chunks), encoding="utf-8")
 
     HTML_OUT.parent.mkdir(parents=True, exist_ok=True)
-    html = GALLERY_TEMPLATE.replace("{SECTIONS}", "\n".join(gallery_chunks))
     HTML_OUT.write_text(html, encoding="utf-8")
 
     total = sum(len(items) for items in ICONS.values())
-    print(f"\nDone. {total - len(misses)}/{total} fetched.", file=sys.stderr)
+    print(f"\nDone. {total - len(misses)}/{total} loaded locally.", file=sys.stderr)
     print(f"  primitive-icons.md: {MD_OUT}", file=sys.stderr)
     print(f"  icons.html:         {HTML_OUT}", file=sys.stderr)
     if misses:

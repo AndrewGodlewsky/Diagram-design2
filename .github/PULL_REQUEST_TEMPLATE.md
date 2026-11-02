@@ -1,44 +1,18 @@
-## What does this PR do?
+## What changed and why?
 
-<!-- One or two sentences: what changed and why. -->
+Describe the resulting behavior and removed dependencies or features.
 
-## Visual proof
+## Validation
 
-<!--
-Required when this PR adds or changes a diagram, example, or template.
-Attach rendered screenshots—not source snippets—for every changed variant. A new
-diagram type must show its light, dark, and full editorial examples. Use a small
-captioned table or contact sheet so reviewers can compare the whole set at a glance.
-Write "Not applicable" only when the PR has no visual output changes.
--->
+- [ ] python scripts/run-checks.py passed; failures or omissions are explained below
+- [ ] Output remains static, self-contained and local; no browser or package installation added
+- [ ] Accessibility, geometry and data-consistency checks retained
+- [ ] Import content is treated as untrusted data
+- [ ] Generated assets match their builders
+- [ ] Current documentation and plugin metadata match the behavior
 
-| Variant | Rendered preview |
-|---|---|
-| Light | |
-| Dark | |
-| Full editorial | |
+## Visual review and limitations
 
-## Validation gates
-
-<!-- Mark what you ran and that it passed. CI runs all of these on the PR too. -->
-
-- [ ] `python3 scripts/test-lint-a11y.py`
-- [ ] `python3 scripts/lint-skin.py --all --baseline`
-- [ ] `python3 scripts/verify-sequence-oauth.py`
-- [ ] `python3 scripts/verify-drawio-import.py`
-- [ ] `python3 scripts/verify-mermaid-import.py`
-- [ ] `git diff --exit-code` green after `python3 scripts/build-icons.py` (if icons changed)
-- [ ] Docs updated in the same PR where behavior changed
-
-## Checklist
-
-- [ ] I have no more than five open PRs here, including drafts, and have addressed feedback on my existing PRs
-- [ ] No new entries added to `scripts/lint-skin-baseline.txt`
-- [ ] Generated and source files are consistent (extractor ↔ verifier ↔ reference ↔ command)
-- [ ] Accessible SVG contract satisfied for new/changed examples
-- [ ] Rendered screenshots are attached for every new/changed diagram variant, or visual proof is marked not applicable
-- [ ] Code of Conduct respected
+Link changed HTML/SVG examples. State whether they were manually viewed and with which system fonts. Screenshots are optional; no browser installation is required. Automated structural checks do not prove exact text rendering.
 
 ## Related issues
-
-<!-- Link any issues this closes, e.g. "Closes #12". -->

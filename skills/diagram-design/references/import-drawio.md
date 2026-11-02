@@ -121,7 +121,7 @@ Fresh layout on the 4px grid, per the type reference and SKILL.md §6–§7. Exp
 
 1. Write the `.html`.
 2. Run the SKILL.md §9 taste gate **and** the [`output-spec.md` §6](output-spec.md) checklist.
-3. Produce `svg` / `png` if the format dial asked for them — via [`export.md`](export.md), from the HTML.
+3. Produce `svg` if the format dial requested it — via [`export.md`](export.md), from the HTML.
 4. Report the fidelity ledger ([`output-spec.md` §5](output-spec.md)). Every import gets one; the user knows the source and will notice what's gone.
 
 ---

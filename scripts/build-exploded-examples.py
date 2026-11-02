@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
 from axonometry import (FONT_LINK, FULL, MINIMAL, SKINS, L, M, Proj, Rect,  # noqa: E402
-                        animated_page, cards_html, f, finish, outline, point, prism, solid, styles, walk)
+                        cards_html, f, finish, outline, point, prism, solid, styles, walk)
 
 
 # ---------------------------------------------------------------- parts
@@ -241,13 +241,12 @@ class Figure:
     footer: str = ""
 
 
-def label(sk, part, anchor, col_x, focal, motion):
+def label(sk, part, anchor, col_x, focal):
     ax, ay = anchor
-    cls = ' class="part-label"' if motion else ""
     lead = sk["lead_acc"] if focal else sk["lead"]
     dot = sk["accent"] if focal else sk["ink"]
     sub = sk["accent"] if focal else sk["muted"]
-    return (f'<g data-role="label"{cls}>'
+    return (f'<g data-role="label">'
             f'<line data-role="leader" x1="{f(ax + 6)}" y1="{f(ay)}" x2="{f(col_x - 12)}" y2="{f(ay)}" stroke="{lead}" stroke-width="0.8"/>'
             f'<circle cx="{f(ax)}" cy="{f(ay)}" r="2" fill="{dot}"/>'
             f'<text data-role="name" x="{f(col_x)}" y="{f(ay - 1)}" fill="{sk["ink"]}" font-size="16" font-weight="600" font-family="\'Geist\', sans-serif">{part.name}</text>'
@@ -255,6 +254,8 @@ def label(sk, part, anchor, col_x, focal, motion):
 
 
 def build_svg(fig: Figure, skin: str, motion: bool, slug: str):
+    if motion:
+        raise ValueError("Only static diagrams are supported")
     sk = SKINS[skin]
     parts = fig.parts
     gap = explode(parts, fig.gap_k)
@@ -281,8 +282,6 @@ def build_svg(fig: Figure, skin: str, motion: bool, slug: str):
             a += ' data-kind="housing"'
         if p.key == fig.focus:
             a += " data-focal"
-        if motion:
-            a += f' data-closed-z="{f(p.closed_z)}"'
         return a
 
     out = [f'<rect width="100%" height="100%" fill="{sk["paper"]}"/>',
@@ -294,24 +293,15 @@ def build_svg(fig: Figure, skin: str, motion: bool, slug: str):
         for th in (135, -45))
 
     pr0, body0 = draw_part(P, b, sk, b.key == fig.focus, f"{slug}-{b.key}")
-    if motion:
-        out.append(f'<g {attrs(0, b)}>' + "".join(body0) + "</g>")
-        out.append(f'<g data-motion-item data-step="{steps}" data-reveal aria-label="{b.name} stays put; trace lines show where each part sat">'
-                   + trace + label(sk, b, pr0["anchor"], col_x, b.key == fig.focus, False) + "</g>")
-    else:
-        out.append(trace)
-        out.append(f'<g {attrs(0, b)}>' + "".join(body0) + label(sk, b, pr0["anchor"], col_x, b.key == fig.focus, False) + "</g>")
+    out.append(trace)
+    out.append(f'<g {attrs(0, b)}>' + "".join(body0) + label(sk, b, pr0["anchor"], col_x, b.key == fig.focus) + "</g>")
 
     def group(i):
         p = parts[i]
         focal = p.key == fig.focus
         pr, body = draw_part(P, p, sk, focal, f"{slug}-{p.key}")
-        lab = label(sk, p, pr["anchor"], col_x, focal, motion)
-        if not motion:
-            return f'<g {attrs(i, p)}>' + "".join(body) + lab + "</g>"
-        step = top_level - lv[i] + 1
-        return (f'<g {attrs(i, p)} data-motion-item data-step="{step}" style="--lift:{f(p.z - p.closed_z)}px" '
-                f'aria-label="{p.name} lifts clear">' + "".join(body) + lab + "</g>")
+        lab = label(sk, p, pr["anchor"], col_x, focal)
+        return f'<g {attrs(i, p)}>' + "".join(body) + lab + "</g>"
 
     if housing:
         for i in range(1, len(parts) - 1):
@@ -330,34 +320,6 @@ def build_svg(fig: Figure, skin: str, motion: bool, slug: str):
 
 
 # ---------------------------------------------------------------- pages
-
-MOTION_CSS = """
-    /* Static source is the exploded frame. Only an initialized enhancement assembles it.
-       Parts travel straight up, so a vertical translate is the whole explode. */
-    .motion-ready [data-motion-item][data-part] { opacity: 1; transform: translateY(var(--lift)); }
-    .motion-ready:not([data-frame="start"]) [data-motion-item][data-part] { transition: transform var(--motion-step) var(--motion-ease); }
-    .motion-ready [data-motion-item][data-part].is-visible,
-    .motion-ready[data-frame="end"] [data-motion-item][data-part],
-    .motion-ready[data-frame="static"] [data-motion-item][data-part] { transform: none; }
-    .motion-ready [data-part] .part-label { opacity: 0; transition: none; }
-    .motion-ready [data-part].is-visible .part-label { opacity: 1; transition: opacity var(--motion-fast) linear var(--motion-step); }
-    .motion-ready[data-frame="end"] .part-label,
-    .motion-ready[data-frame="static"] .part-label { opacity: 1; }
-    .motion-ready [data-motion-item][data-reveal] { opacity: 0; transform: none; transition: none; }
-    .motion-ready [data-motion-item][data-reveal].is-visible { opacity: 1; transition: opacity var(--motion-step) var(--motion-ease); }
-    .motion-ready[data-frame="end"] [data-motion-item][data-reveal],
-    .motion-ready[data-frame="static"] [data-motion-item][data-reveal] { opacity: 1; }
-    html[data-motion="static"] .part-label { opacity: 1 !important; }
-    html[data-motion="step"] .part-label { transition: none !important; }
-    @media (prefers-reduced-motion: reduce) { .part-label { opacity: 1 !important; } }
-    @media print { .part-label { opacity: 1 !important; } }
-"""
-
-
-def exploded_animated(fig: Figure, slug: str, body: str, vh: int, steps: int) -> str:
-    return animated_page(fig.title, fig.desc, slug, body, vh, steps, "Exploded axonometric · Optional motion",
-                         MOTION_CSS, "The complete exploded diagram is shown above.")
-
 
 EYEBROW = "Exploded axonometric · Diagram Design"
 
@@ -611,7 +573,6 @@ FIGURES = {
                ("", "muted", "Small parts, one primitive", "Every keycap and switch is the same rounded prism as the case, just smaller. The part box is the envelope of its grid.")],
         footer="mechanical keyboard · exploded axonometric"),
 }
-ANIMATED = ("exploded-phone", "exploded-unboxing", "exploded-ai-stack", "exploded-keyboard")
 
 
 def render_all() -> dict[Path, str]:
@@ -629,11 +590,6 @@ def render_all() -> dict[Path, str]:
                 html = MINIMAL.format(eyebrow=EYEBROW, title=fig.title, font=FONT_LINK, slug=slug, desc=fig.desc, vh=vh, body=body,
                                       **{k: sk[k] for k in ("paper", "ink", "muted", "accent")})
             files[ASSETS / f"example-{slug}.html"] = html
-        if name in ANIMATED:
-            fig = make()
-            slug = f"{name}-animated"
-            body, vh, steps = build_svg(fig, "light", True, slug)
-            files[ASSETS / f"example-{slug}.html"] = exploded_animated(fig, slug, body, vh, steps)
     return files
 
 

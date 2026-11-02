@@ -16,7 +16,6 @@ SWIMLANE = ASSET_DIR / "example-swimlane.html"
 ZONED = ASSET_DIR / "example-dp-integration.html"
 SEQUENCE_OAUTH = ASSET_DIR / "example-sequence-oauth.html"
 HIGH_LEVEL = ASSET_DIR / "example-high-level.html"
-QUEUE_ANIMATED = ASSET_DIR / "example-queue-animated.html"
 MEDALLION = ASSET_DIR / "example-medallion.html"
 DB_SCHEMA = ASSET_DIR / "example-db-schema.html"
 
@@ -381,7 +380,6 @@ def main() -> int:
     check_file("shipped architecture example", ARCHITECTURE, 0)
     check_file("shipped swimlane example", SWIMLANE, 0)
     check_file("shipped high-level example", HIGH_LEVEL, 0)
-    check_file("shipped queue animation", QUEUE_ANIMATED, 0)
     # Medallion's promotion arcs meet head to tail at each tier; that joint stays legal.
     check_file("shipped medallion chain joints", MEDALLION, 0)
     check_file("shipped db-schema example", DB_SCHEMA, 0)

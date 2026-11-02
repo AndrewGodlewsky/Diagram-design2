@@ -9,19 +9,11 @@
 
 **An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>45 diagram types. No shadows. No Mermaid slop.**
 
-[![GitHub stars](https://img.shields.io/github/stars/cathrynlavery/diagram-design?style=flat-square&color=bf4520)](https://github.com/cathrynlavery/diagram-design/stargazers)
-[![skills.sh installs](https://skills.sh/b/cathrynlavery/diagram-design?style=flat-square)](https://skills.sh/cathrynlavery/diagram-design/diagram-design)
-[![CI](https://img.shields.io/github/actions/workflow/status/cathrynlavery/diagram-design/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/cathrynlavery/diagram-design/actions/workflows/ci.yml)
-[![Plugin version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcathrynlavery%2Fdiagram-design%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version&style=flat-square&color=555555)](CHANGELOG.md)
-[![MIT license](https://img.shields.io/badge/license-MIT-555555?style=flat-square)](LICENSE)
+**[Repository](https://github.com/AndrewGodlewsky/Diagram-design2) · [Gallery files](skills/diagram-design/assets/index.html) · [Changelog](CHANGELOG.md)**
 
-<a href="https://trendshift.io/repositories/26141" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/26141" alt="cathrynlavery/diagram-design on Trendshift" width="250" height="55"/></a>
+[Install](#install) · [What it makes](#what-it-makes) · [Quickstart](#quickstart) · [Match your brand](#onboarding-make-it-look-like-your-brand) · [Import](#import-from-drawio-mermaid-or-excalidraw) · [Export](#export-to-svg) · [Contributing](#contributing)
 
-**[Website](https://diagramdesign.dev) · [Gallery](https://cathrynlavery.github.io/diagram-design/) · [Changelog](CHANGELOG.md)**
-
-[Install](#install) · [What it makes](#what-it-makes) · [Quickstart](#quickstart) · [Match your brand](#onboarding-make-it-look-like-your-brand) · [Import](#import-from-drawio-mermaid-or-excalidraw) · [Export](#export-to-png--svg) · [Contributing](#contributing)
-
-<code>npx skills add cathrynlavery/diagram-design</code>
+Static HTML/SVG · Python standard library · Local fonts · [MIT license](LICENSE)
 
 <br><br>
 
@@ -40,7 +32,7 @@ Ask your agent in plain words:
 - *"Make me an architecture diagram of my app: frontend, backend, database, Redis cache."*
 - *"I need a quadrant showing Q2 projects by impact vs effort."*
 - *"Give me a sequence of a bearer call with token refresh on 401."*
-- *"Onboard diagram-design to https://yoursite.com"* (pulls your palette and fonts so every diagram after this one matches your site)
+- *"Use the brand tokens in `./design/tokens.css` for this diagram."*
 
 The agent picks the type, states its plan, and writes one `.html` file you can open by double-clicking.
 
@@ -48,25 +40,31 @@ The agent picks the type, states its plan, and writes one `.html` file you can o
 
 ## Install
 
+For a restricted environment, copy the complete `skills/diagram-design/` directory from a reviewed local checkout into your host's skill directory, such as `.agents/skills/diagram-design` or `.github/skills/diagram-design` for a project. No package manager or download is required for this copy. Keep updates manual so you can review a replacement before using it.
+
+The marketplace commands below are optional network-based installation/update methods. Once installed, the skill's Python tools and generated diagrams require no network access. Your agent provider may still process prompts remotely; configure the host separately if the entire environment must be offline.
+
 Works with any host that reads Agent Skills, including Cursor, Claude Code, Codex, Qoder, GitHub Copilot, Gemini CLI, Cline, Windsurf and Amp:
 
 ```bash
-npx skills add cathrynlavery/diagram-design
+npx skills add AndrewGodlewsky/Diagram-design2
 ```
 
 In Claude Code, the plugin marketplace gets you updates and the slash commands:
 
 ```text
-/plugin marketplace add cathrynlavery/diagram-design
+/plugin marketplace add AndrewGodlewsky/Diagram-design2
 /plugin install diagram-design@diagram-design
 ```
 
-Official builds come only from this repository. LittleMight, Cathryn Lavery's company, publishes the plugin directory listings; a listing under any other name is an unofficial copy. [PRIVACY.md](PRIVACY.md) lists what the skill sends over the network.
+This repository is maintained by [AndrewGodlewsky](https://github.com/AndrewGodlewsky), based on [Cathryn Lavery's Diagram Design](https://github.com/cathrynlavery/diagram-design). Install commands here track `AndrewGodlewsky/Diagram-design2`; the plugin and skill retain the name `diagram-design`. [PRIVACY.md](PRIVACY.md) explains local processing and the separate role of your agent provider.
+
+**Existing installations:** a marketplace registration remembers its Git source. In each host, inspect the registered `diagram-design` marketplace and switch an upstream registration to this repository using that host's uninstall/remove/add/install flow. The [Copilot CLI section](#github-copilot-migration) gives the exact commands. Reinstall standalone skills from this repository as well; an update of an upstream copy does not switch repositories. Changes in this checkout become available to remote installs after they reach this repository's default branch. External directory listings and organization mirrors must be updated separately by their owners.
 
 <details>
-<summary><b>Claude Code</b>: turn on auto-update</summary>
+<summary><b>Claude Code</b>: optional auto-update for connected environments</summary>
 
-After installing, run `/plugin`, open **Marketplaces**, select **diagram-design**, and choose **Enable auto-update**. Claude Code disables auto-update by default for third-party marketplaces; after this toggle, it refreshes the marketplace and installed plugin in the background after startup. Run `/reload-plugins` when prompted, or let the next session load the update.
+For a connected environment where automatic updates are wanted, run `/plugin`, open **Marketplaces**, select **diagram-design**, and choose **Enable auto-update**. This permits background network updates. Leave it disabled in restricted environments and use a reviewed local copy instead. Run `/reload-plugins` after an intentional update, or start a new session.
 
 </details>
 
@@ -76,7 +74,7 @@ After installing, run `/plugin`, open **Marketplaces**, select **diagram-design*
 The cross-agent [`skills` CLI](https://skills.sh) resolves this repository, detects `skills/diagram-design/SKILL.md`, and installs the whole skill (`references/`, `assets/`, `scripts/`) into every host root you select, including Cursor's:
 
 ```bash
-npx skills add cathrynlavery/diagram-design
+npx skills add AndrewGodlewsky/Diagram-design2
 ```
 
 When the selected roots resolve to more than one skills directory, the CLI asks for an installation method and recommends **Symlink**: one canonical copy, linked into each root, so a later update reaches all of them at once. Pass `--copy` for independent copies per host instead. A selection that resolves to a single directory is copied, because the distinction is immaterial there. Where symlinks are unavailable (Windows without Developer Mode) the CLI falls back to copies and reports which roots it copied.
@@ -91,7 +89,7 @@ This is a standalone install, separate from the marketplaces below: it does not 
 <summary><b>Codex</b></summary>
 
 ```bash
-codex plugin marketplace add cathrynlavery/diagram-design
+codex plugin marketplace add AndrewGodlewsky/Diagram-design2
 codex plugin add diagram-design@diagram-design
 ```
 
@@ -105,7 +103,7 @@ Codex refreshes configured Git marketplaces at startup. To fetch immediately, ru
 Clone the repository, validate the native plugin, and install it locally:
 
 ```bash
-git clone https://github.com/cathrynlavery/diagram-design.git
+git clone https://github.com/AndrewGodlewsky/Diagram-design2.git diagram-design
 qoder plugins validate ./diagram-design
 qoder plugins install ./diagram-design
 qoder plugins list
@@ -126,15 +124,31 @@ Start a new task after installing or updating the plugin.
 
 </details>
 
+<a id="github-copilot-migration"></a>
 <details>
-<summary><b>GitHub Copilot</b></summary>
+<summary><b>GitHub Copilot CLI</b></summary>
 
 ```bash
-copilot plugin marketplace add cathrynlavery/diagram-design
+copilot plugin marketplace add AndrewGodlewsky/Diagram-design2
 copilot plugin install diagram-design@diagram-design
 ```
 
-Copilot installs the shared Diagram Design skill plus its doctor, export, import, and profile capabilities from the existing repository marketplace. Confirm discovery with `copilot skill list` (or `/skills` in an interactive session), then ask for a diagram in natural language. To fetch a merged update, run `copilot plugin marketplace update diagram-design`, then `copilot plugin update diagram-design@diagram-design`.
+Copilot reads the shared `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json`; a separate Copilot manifest is not required. The marketplace's `source: "./"` loads this repository's plugin root and shared `skills/` tree. See [GitHub's plugin reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-plugin-reference#file-locations).
+
+Confirm discovery with `copilot plugin list` and `copilot skill list` (or `/skills` in an interactive session), then ask for a diagram in natural language. To fetch a merged update, run `copilot plugin marketplace update diagram-design`, then `copilot plugin update diagram-design@diagram-design`, and start a new session.
+
+**Migrating an existing upstream install:** both repositories use the marketplace name `diagram-design`. Updating the old registration continues to fetch its old repository; editing this checkout does not change a client's saved source. First run `copilot plugin marketplace list` to inspect the registered source. If it points to `cathrynlavery/diagram-design`, switch it once:
+
+```bash
+copilot plugin uninstall diagram-design@diagram-design
+copilot plugin marketplace remove diagram-design
+copilot plugin marketplace add AndrewGodlewsky/Diagram-design2
+copilot plugin install diagram-design@diagram-design
+copilot plugin marketplace list
+copilot plugin list
+```
+
+Verify that the marketplace now points to `AndrewGodlewsky/Diagram-design2`, then start a new session. If the plugin is already absent, skip the uninstall command. These steps use GitHub's documented [install and remove commands](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/plugins-finding-installing). For Copilot in an IDE, use its plugin management UI to switch the marketplace source, or use the Agent Skills install above.
 
 </details>
 
@@ -142,7 +156,7 @@ Copilot installs the shared Diagram Design skill plus its doctor, export, import
 <summary><b>Factory Droid</b></summary>
 
 ```bash
-droid plugin marketplace add https://github.com/cathrynlavery/diagram-design
+droid plugin marketplace add https://github.com/AndrewGodlewsky/Diagram-design2
 droid plugin install diagram-design@diagram-design --scope user
 ```
 
@@ -161,7 +175,7 @@ Organization GitHub marketplaces currently require a private or internal reposit
 <summary><b>Pi</b></summary>
 
 ```bash
-pi install https://github.com/cathrynlavery/diagram-design
+pi install https://github.com/AndrewGodlewsky/Diagram-design2
 ```
 
 Run `/reload` in an open Pi session. Pi makes the skill available for matching diagram requests; use `/skill:diagram-design` to invoke it explicitly. Pi also loads the `/export-diagram`, `/import-mermaid`, `/import-excalidraw`, `/profile`, and `/doctor` prompt templates. The unpinned Git install is intentional: Pi has no automatic package refresh, so run `pi update --extensions` to pull merged updates.
@@ -174,7 +188,7 @@ Run `/reload` in an open Pi session. Pi makes the skill available for matching d
 Import the Agent Skill from the repository subdirectory URL:
 
 ```text
-https://github.com/cathrynlavery/diagram-design/tree/main/skills/diagram-design
+https://github.com/AndrewGodlewsky/Diagram-design2/tree/main/skills/diagram-design
 ```
 
 Kiro copies imported skills into `.kiro/skills/` for a workspace or `~/.kiro/skills/` globally, so re-import the URL to pick up updates. Custom agents that declare resources should include `skill://diagram-design/**/SKILL.md`.
@@ -191,10 +205,10 @@ Copy or symlink `skills/diagram-design/` to `.opencode/skills/diagram-design` in
 <details>
 <summary><b>Editable install</b> (customize the style guide in a clone)</summary>
 
-Managed installs are convenient, but changes to `references/style-guide.md` may be replaced by package updates. Saved profiles in `~/.diagram-design/profiles/` survive updates, and projects with a `.diagram-design` marker are unaffected. Clone the repo and install the local path if you plan to customize the working style guide directly:
+Saved profiles in `~/.diagram-design/profiles/` survive package updates. Use profiles or project-local token files for branding; the skill does not modify its installed guide. For development, use a local checkout:
 
 ```bash
-git clone git@github.com:cathrynlavery/diagram-design.git ~/code/diagram-design
+git clone git@github.com:AndrewGodlewsky/Diagram-design2.git ~/code/diagram-design
 
 # Pi: register the checkout as a local package
 pi install ~/code/diagram-design
@@ -225,7 +239,7 @@ The shared skill lives at `skills/diagram-design/`. Pi discovers it through the 
 | You make it by | Writing text | Dragging shapes by hand | Describing it to your agent |
 | Layout | Automatic | Manual | Placed by the agent on a 4px grid, with CI checks for overlaps and clipping |
 | Look | The renderer's theme | Whatever you draw | One opinionated editorial style, matched to your brand |
-| Output | Text that renders on GitHub | An editable `.drawio` or `.excalidraw` file | One HTML file with inline SVG, exportable to SVG or PNG |
+| Output | Text that renders on GitHub | An editable `.drawio` or `.excalidraw` file | One HTML file with inline SVG, exportable to standalone SVG |
 | Change it later | Edit the text | Edit the canvas | Ask the agent again, or edit the SVG |
 | Existing diagrams | | | Redraws Mermaid, draw.io and Excalidraw files |
 
@@ -245,7 +259,7 @@ The model already understood the content. What it was missing was taste, so I wr
 
 ## What it makes
 
-45 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
+45 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, font download, or external resource dependency. The authoring tools use Python 3.10+ standard library only.
 
 <table>
 <tr>
@@ -331,89 +345,31 @@ Architecture can nest administrative bands and traffic boxes in one snapshot whe
 
 Architecture delta compares synchronized topologies through a Before · Changes · After ledger of added, removed, changed, moved, and rewired objects. See its [reference](skills/diagram-design/references/type-architecture-delta.md) and [order-fulfilment example](skills/diagram-design/assets/example-architecture-delta.html). Attribute-only comparisons remain tables; a single snapshot uses Architecture.
 
-Exploded axonometric draws one object in 2:1 dimetric projection with its parts lifted apart at equal gaps: a [phone teardown](skills/diagram-design/assets/example-exploded-phone.html), an [unboxing](skills/diagram-design/assets/example-exploded-unboxing.html), an [app stack](skills/diagram-design/assets/example-exploded.html), an [AI agent stack](skills/diagram-design/assets/example-exploded-ai-stack.html), or a [mechanical keyboard](skills/diagram-design/assets/example-exploded-keyboard.html). Every coordinate comes from one projection function, and the [animated phone](skills/diagram-design/assets/example-exploded-phone-animated.html) opens assembled and explodes once. See its [reference](skills/diagram-design/references/type-exploded.md).
+Exploded axonometric draws one object in 2:1 dimetric projection with its parts lifted apart at equal gaps: a [phone teardown](skills/diagram-design/assets/example-exploded-phone.html), an [unboxing](skills/diagram-design/assets/example-exploded-unboxing.html), an [app stack](skills/diagram-design/assets/example-exploded.html), an [AI agent stack](skills/diagram-design/assets/example-exploded-ai-stack.html), or a [mechanical keyboard](skills/diagram-design/assets/example-exploded-keyboard.html). Every coordinate comes from one projection function. See its [reference](skills/diagram-design/references/type-exploded.md).
 
-Axonometric plan uses the same projection for one floor or one site: walls cut at desk height so every room reads from a single view, or buildings on a campus tagged by build phase. See the [office floor](skills/diagram-design/assets/example-axonometric-plan.html), the [campus](skills/diagram-design/assets/example-axonometric-plan-campus.html), the [coffee shop](skills/diagram-design/assets/example-axonometric-plan-coffee-shop.html), the [fulfillment floor](skills/diagram-design/assets/example-axonometric-plan-warehouse.html), the [phased campus animation](skills/diagram-design/assets/example-axonometric-plan-campus-animated.html), and the [reference](skills/diagram-design/references/type-axonometric-plan.md).
+Axonometric plan uses the same projection for one floor or one site: walls cut at desk height so every room reads from a single view, or buildings on a campus tagged by build phase. See the [office floor](skills/diagram-design/assets/example-axonometric-plan.html), the [campus](skills/diagram-design/assets/example-axonometric-plan-campus.html), the [coffee shop](skills/diagram-design/assets/example-axonometric-plan-coffee-shop.html), the [fulfillment floor](skills/diagram-design/assets/example-axonometric-plan-warehouse.html), and the [reference](skills/diagram-design/references/type-axonometric-plan.md).
 
-**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 45; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
+**Browse the gallery:** open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to follow ordinary links to each light, dark, or full-editorial example. To publish it, enable GitHub Pages with **GitHub Actions** as the source in this repository's settings, then run the existing **Deploy gallery to GitHub Pages** workflow. Its target is [andrewgodlewsky.github.io/Diagram-design2](https://andrewgodlewsky.github.io/Diagram-design2/); this repository has no Pages deployment yet. Each type has one number, 01 to 45; its variants and worked examples carry the same number with a letter. The catalog is static HTML with no JavaScript, frames, or automatic resource loads.
 
 ---
 
 ## Onboarding: make it look like *your* brand
 
-The whole point is editorial diagrams in **your** colors and typography, not a generic template.
+Use the default jet-black and tangerine palette, or supply a local CSS file, a design-token folder, a style guide, or pasted values. The agent reads only the paths you supply, maps literal values to semantic color and typography roles, and records their provenance. It does not visit websites, run scripts from your files, or follow font URLs.
 
-Out of the box, diagrams render in a **jet-black + tangerine** palette (white-smoke paper, jet-black ink, a darkened tangerine accent that clears 4.5:1 contrast as text, blue-slate muted, silver hairlines). Good enough to screenshot straight away. Sixty seconds of onboarding is better: the skill pulls your brand from your website and applies it across every diagram.
+For example: `Use ./design/tokens.css to style this diagram, then save the profile as acme.` The effective guide stays in the session or a user-selected project file. The installed package remains unchanged.
 
-### The flow
+Text tokens target 4.5:1 contrast and essential marks 3:1 on the actual background. If a supplied token fails, the agent proposes an accessible adjustment and explains it. SVG templates include `role="img"`, resolving `aria-labelledby`, and first-child title/description elements with per-diagram IDs.
 
-```
-You:     "onboard diagram-design to https://yoursite.com"
-Agent:   → fetches the homepage
-         → extracts the dominant palette + font stack
-         → maps detected values to semantic roles:
-             paper, ink, muted, accent, link
-         → shows a proposed diff
-         → writes your tokens to references/style-guide.md
-You:     "yes, apply it"
-```
+Fonts always resolve locally. Optional installed Instrument Serif, Geist, and Geist Mono lead generic serif, sans, and monospace fallbacks. No font files are bundled or downloaded. Font metrics differ across computers; structural checks do not establish pixel-identical rendering. See [Font source](skills/diagram-design/references/style-guide.md#font-source).
 
-Every new diagram now uses your colors. Your website's paper color becomes the diagram background. Your CTA color becomes the focal accent. Your body font stack becomes the node label family.
-
-Brand matching also emits a fidelity receipt: sampled URLs, exact color roles, font families and weights, font source URLs, and any fallback. Public site fonts are used directly and verified after rendering rather than silently replaced with generic system fonts.
-
-### What gets extracted
-
-| Detected from your site | Becomes |
-|---|---|
-| `<body>` background | `paper` token |
-| Primary text color | `ink` token |
-| Secondary / caption text | `muted` token |
-| Cards or containers | `paper-2` token |
-| Most-used brand color (CTA, link, heading) | `accent` token |
-| `<h1>` font family | `title` font |
-| `<body>` font family | `node-name` font |
-| `<code>` / `<pre>` font | `sublabel` font |
-
-### Contrast checks happen automatically
-
-Before writing tokens, the skill verifies WCAG AA contrast on `ink` over `paper`. If your site has a color that fails contrast at diagram sizes (9 to 12px), it proposes an adjusted value and explains why. The default skin is held to the same contract in CI: text roles clear 4.5:1 and essential marks clear 3:1 on both light and dark paper.
-
-### Accessible by default
-
-Every diagram template gives the inline SVG an accessible name and description: `role="img"`, a resolving `aria-labelledby`, and first-child `<title>` / `<desc>` slots. IDs are prefixed per diagram and variant, so multiple SVG exports can be safely inlined on one page without duplicate accessible-name IDs. Decorative specimen icons are hidden from assistive technology instead.
-
-### Offline fonts
-
-By default a diagram loads Instrument Serif, Geist and Geist Mono from Google Fonts, the only network request it makes. Ask for **system fonts** (or set the font source to `system` in your style guide) and the file makes no network requests at all: the stacks fall back to the platform's own serif, sans and monospace faces. See [Font source](skills/diagram-design/references/style-guide.md#font-source).
-
-### Manual override
-
-Prefer to set tokens by hand? Open [`skills/diagram-design/references/style-guide.md`](skills/diagram-design/references/style-guide.md) and edit the table. Everything downstream reads from there: every diagram, the annotation primitive, and the gallery all use semantic role names (`accent`, not a hex value).
-
-### First-run gate
-
-The skill won't silently ship default-skinned diagrams into a branded project. On first use in a new project, it checks if `style-guide.md` has been customized. If not, it pauses and asks:
-
-> *"This is your first diagram in this project. The style guide is still at the default. Want to run onboarding, paste tokens manually, or proceed with default?"*
-
-See [`skills/diagram-design/references/onboarding.md`](skills/diagram-design/references/onboarding.md) for the full spec.
-
-### Working with multiple clients
-
-Onboard a brand once, save the result as a named profile, then add a `.diagram-design` marker containing `profile: <slug>` to each client project. Marker projects read `~/.diagram-design/profiles/<slug>.md` directly, so parallel workspaces can use different brands without overwriting a shared installed `style-guide.md`.
-
-The profile library is shared across Claude Code, Codex, Factory Droid, and Pi. Use `/diagram-design:profile` in Claude Code, `/profile` in Factory Droid or Pi, or ask in natural language in any host. See [`profiles.md`](skills/diagram-design/references/profiles.md) for the storage, marker, and recovery contract.
+For multiple clients, save named profiles outside the package at `~/.diagram-design/profiles/<slug>.md`. An optional project `.diagram-design` marker containing `profile: <slug>` selects one directly. `default` always selects the shipped guide. Use `/diagram-design:profile`, `/profile`, or natural language to manage profiles. See [onboarding.md](skills/diagram-design/references/onboarding.md) and [profiles.md](skills/diagram-design/references/profiles.md).
 
 ---
 
 ## Quickstart
 
-```bash
-# From a cloned checkout, open the gallery to see every diagram
-open skills/diagram-design/assets/index.html       # macOS
-xdg-open skills/diagram-design/assets/index.html  # Linux
-```
+Browse the [local gallery](skills/diagram-design/assets/index.html) for examples, or start directly from a request. Viewing is optional; authoring and validation do not launch a browser.
 
 Then ask your agent for a diagram, like the prompts at the top of this page. A sequence with token refresh uses the ALT combined-fragment grammar in `type-sequence.md`; see [`example-sequence-oauth.html`](skills/diagram-design/assets/example-sequence-oauth.html).
 
@@ -424,14 +380,11 @@ You can also start from a template directly:
 ```bash
 cp skills/diagram-design/assets/template.html my-diagram.html        # minimal light
 cp skills/diagram-design/assets/template-full.html my-diagram.html   # editorial with summary cards
-cp skills/diagram-design/assets/template-motion.html my-diagram.html # optional accessible motion
 ```
 
-### Semantic patterns and optional motion
+### Semantic patterns
 
-When behavior matters, the skill chooses a semantic pattern first and a visual type second. The nine routed patterns cover fan-in queues and bottlenecks, repeated stage slots, unstructured-input transformation, paired policy traces, secure paved roads, governance catalogs, compensating security layers, traceable block decomposition, and lifecycle phase maps. Each pattern defines its triggers, primitives, budget, anti-patterns, static fallback, and nearest visual type in [`semantic-patterns.md`](skills/diagram-design/references/semantic-patterns.md).
-
-Motion is optional and does not create another visual type. [`animation.md`](skills/diagram-design/references/animation.md) defines `none`, `reveal`, `step`, and `loop` modes with a complete static first frame, deterministic timing, and controls when interaction is available. Reduced-motion output shows the complete static frame and hides/disables playback controls. Motion HTML uses the exact reviewed controller from `template-motion.html`; arbitrary or modified inline scripts, remote assets, CSS imports, and executable HTML attributes are rejected. The default is `none`: ordinary output remains static and script-free. [`example-policy-trace-animated.html`](skills/diagram-design/assets/example-policy-trace-animated.html) is the self-contained interactive example.
+[Semantic patterns](skills/diagram-design/references/semantic-patterns.md) explain behavior such as queue bottlenecks, policy decisions, lifecycle phases, and traceable block decomposition. Select a pattern when behavior carries the meaning, then a visual type for its layout. Every state and outcome is visible in a single static composition.
 
 ---
 
@@ -464,7 +417,7 @@ The point isn't conversion, it's **fitting the output to where it's going**. Sam
 
 | Dial | Options | What it changes |
 |---|---|---|
-| **Format** | `html` · `svg` · `png` · `html+png` | The deliverable. SVG for Figma, PNG for slides, HTML for the web. |
+| **Format** | `html` · `svg` | The deliverable: SVG for vector hand-off, HTML for the complete page. |
 | **Size** | `doc-inline` · `doc-wide` · `slide-16x9` · `slide-4x3` · `social-og` · `social-square` · `print-a4-landscape` · `print-a3-landscape` · `print-letter-landscape` · `fit` | The `viewBox` **and the type ramp**: a projected slide gets 16px node names, not 12px. |
 | **Detail** | `faithful` (≤24 nodes, zoned) · `balanced` (≤12) · `simplified` (≤7) | How much of the source survives, via a fixed degrade ladder: decorations, then duplicates, then leaf clusters, then infrastructure. |
 | **Audience** | `engineer` · `mixed` · `executive` | The *wording*, not the count. `Auth Service / JWT · RS256 · :8443` → `Auth Service / token check` → `Sign-in`. |
@@ -482,49 +435,26 @@ What never carries over: source or renderer coordinates, source palette, source 
 
 ---
 
-## Export to PNG / SVG
+## Export to SVG
 
-Diagrams ship as self-contained HTML, but you can export the diagram itself for Figma, slides, or social cards. SVG export also carries CDATA-wrapped diagram CSS, including selectors bound to the original SVG root, and preserves quoted selector values containing comment delimiters. Use the slash command for your agent:
+Ask `Export this diagram as SVG`, or run `/diagram-design:export-diagram path/to/diagram.html` in Claude Code and `/export-diagram path/to/diagram.html` in Pi. The standalone SVG retains diagram CSS and namespaces local definitions. Editorial headers and cards remain in the HTML source.
 
-**Pi:**
+The packaged helper uses Python's standard library:
 
-```
-/export-diagram path/to/diagram.html
-/export-diagram path/to/diagram.html --svg-only
-/export-diagram path/to/diagram.html --png-only --scale=3
-/export-diagram path/to/diagram.html --registry
+```text
+python skills/diagram-design/scripts/self_check.py path/to/diagram.html
+python skills/diagram-design/scripts/export_svg.py path/to/diagram.html
 ```
 
-**Claude Code:**
+All exports use installed fonts and generic fallbacks. Unsafe or active content is refused before successful output. PNG rendering, animation, remote resources, and browser launch are outside this skill's scope. See [export.md](skills/diagram-design/references/export.md).
 
-```
-/diagram-design:export-diagram path/to/diagram.html
-/diagram-design:export-diagram path/to/diagram.html --svg-only
-/diagram-design:export-diagram path/to/diagram.html --png-only --scale=3
-/diagram-design:export-diagram path/to/diagram.html --registry
-```
-
-Or just ask in natural language:
-
-```
-"Export this diagram as SVG and PNG."
-"Save my-diagram.html as PNG."
-```
-
-- **SVG** extracts the `<svg>` node and injects Google Fonts so it renders standalone in browsers, Figma, and Illustrator. Animation bindings follow namespaced keyframes even when property names use CSS escapes. Pass `--system-fonts` to skip the font import for offline use.
-- **PNG** rasterizes the diagram via Playwright at 2× by default. One-time setup: `pip install playwright && playwright install chromium`.
-
-Both formats are diagram-only: editorial cards and headers from `-full` variants aren't included. For a screenshot of the full editorial layout, use your browser's print-to-PDF or full-page screenshot. See [`skills/diagram-design/references/export.md`](skills/diagram-design/references/export.md) for the full procedure.
-
-- **`--registry`**: for diagrams using the [traceable block decomposition](skills/diagram-design/references/semantic-patterns.md) pattern, also emits `<basename>.registry.json`, a structured projection of every block's `data-block-*` metadata. Combine with either raster format or run alone. See [`skills/diagram-design/references/export-registry.md`](skills/diagram-design/references/export-registry.md).
-
-For motion-enabled HTML, export the explicit final state: open `?motion=static`, wait for `document.fonts.ready`, and confirm the motion root has `data-frame="static"` before capture. Use `?motion=step&step=N` only when a named intermediate frame was requested.
+For [traceable block decomposition](skills/diagram-design/references/semantic-patterns.md), `--registry` emits only the `.registry.json` metadata sidecar. Combine it with `--svg-only` for both. See [export-registry.md](skills/diagram-design/references/export-registry.md).
 
 ---
 
 ## Architecture
 
-Progressive disclosure. `SKILL.md` routes behavior first when needed, then layout. Semantic, type, and animation references load only when relevant.
+Progressive disclosure. `SKILL.md` routes behavior first when needed, then layout. Semantic and type references load only when relevant.
 
 ```
 diagram-design/
@@ -552,15 +482,14 @@ diagram-design/
 │       ├── references/               # loaded only when a type or primitive is chosen
 │       │   ├── style-guide.md        # single source of truth for colors + fonts
 │       │   ├── semantic-patterns.md  # behavior patterns independent of layout
-│       │   ├── animation.md          # optional motion + accessibility contract
-│       │   ├── onboarding.md         # the URL-to-tokens flow
+│       │   ├── onboarding.md         # local files and pasted brand tokens
 │       │   ├── profiles.md           # named client profiles + project markers
 │       │   ├── doctor.md             # environment diagnostics
 │       │   ├── import-drawio.md      # draw.io redraw procedure
 │       │   ├── import-mermaid.md     # Mermaid redraw procedure
 │       │   ├── import-excalidraw.md  # Excalidraw redraw procedure
 │       │   ├── output-spec.md        # format × size × detail level
-│       │   ├── export.md             # SVG / PNG export + sizing
+│       │   ├── export.md             # local SVG export + sizing
 │       │   ├── export-registry.md    # block-metadata JSON sidecar export
 │       │   ├── primitives-core.md    # exact markup for nodes, arrows, labels
 │       │   ├── layout-budget.md      # 4px grid + per-type budgets
@@ -618,10 +547,10 @@ diagram-design/
 │       │   ├── mermaid_extract.py    # Mermaid → structured IR
 │       │   ├── excalidraw_extract.py  # Excalidraw → structured IR
 │       │   ├── export_svg.py         # standalone SVG export
-│       │   ├── export_png.py         # Playwright PNG renderer
+│       │   ├── static_safety.py      # shared local/static content validation
 │       │   └── self_check.py         # packaged output self-check (runs installed)
 │       └── assets/
-│           ├── index.html            # live gallery, tabbed
+│           ├── index.html            # static gallery with ordinary links
 │           ├── icons.html            # icon library browser
 │           ├── template*.html        # scaffolds for new diagrams
 │           ├── example-<type>.html   # 3 variants per type
@@ -630,31 +559,27 @@ diagram-design/
 │           ├── example-import-drawio.html
 │           ├── example-import-mermaid.html
 │           ├── example-import-excalidraw.html
-│           ├── example-policy-trace-animated.html
 │           └── example-sequence-oauth*.html
 ├── scripts/                          # CI gates and build helpers (see CONTRIBUTING.md)
 │   ├── lint-skin.py                  # palette, fonts, a11y, single-file safety
-│   ├── lint-render.py                # Chromium rendered-layout checker
 │   ├── verify-docs-sync.py           # routing, gallery, README and count sync
 │   ├── verify-geometry.py            # label, connector and port geometry
-│   ├── render-canonical-screenshots.py  # deterministic per-type PNG catalog renderer
-│   ├── build-readme-thumbs.py        # regenerates docs/screenshots/thumbs/
 │   └── fixtures/                     # draw.io, Mermaid and Excalidraw test inputs
 ├── docs/cookbook.md                  # operator recipes for editable installs and common tasks
 ├── docs/adr/                         # short records of settled design decisions
 ├── docs/superpowers/                 # design specs and implementation plans (plans/, specs/)
 ├── docs/hero/                        # README demo GIFs (dark, light) and social preview image
-├── docs/screenshots/                 # full-resolution images + source-digest manifest.json
+├── docs/screenshots/                 # existing full-resolution gallery previews
 ├── docs/screenshots/thumbs/          # generated WebP previews the README renders
 ├── CHANGELOG.md                      # release history
 └── CONTRIBUTING.md                   # validation gates and how each one works
 ```
 
-This keeps the agent's working context tight: routine diagrams load one type reference; behavior-rich diagrams add the routed semantic reference; animation adds its contract only when selected.
+This keeps the agent's working context tight: routine diagrams load one type reference; behavior-rich diagrams add the routed semantic reference.
 
 ### What loads when
 
-At startup, the agent sees only the skill name and description. When a request matches, it loads `SKILL.md`; semantic, type, and animation references are pulled in only when relevant.
+At startup, the agent sees only the skill name and description. When a request matches, it loads `SKILL.md`; semantic and type references are pulled in only when relevant.
 
 | You ask for… | Agent loads |
 |---|---|
@@ -665,8 +590,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Show what's inside this device, exploded" | `SKILL.md` + `references/type-exploded.md` |
 | "Draw our office floor plan" | `SKILL.md` + `references/type-axonometric-plan.md` |
 | "Compare why these two policy requests differ" | `SKILL.md` + `references/semantic-patterns.md` + `references/type-flowchart.md` |
-| "Animate that policy trace" | Prior selection + `references/animation.md` |
-| "Onboard this skill to my site" | `SKILL.md` + `references/onboarding.md` + `references/style-guide.md` |
+| "Use the tokens in my local style guide" | `SKILL.md` + `references/onboarding.md` + `references/style-guide.md` |
 | "Use my saved Acme client profile" | `SKILL.md` + `references/profiles.md` + `~/.diagram-design/profiles/acme.md` |
 | "Add an editorial callout to this diagram" | `SKILL.md` + `references/primitive-annotation.md` |
 | "Give me a hand-drawn version" | `SKILL.md` + `references/primitive-sketchy.md` |
@@ -684,16 +608,16 @@ No matter how many types exist, the agent only reads the one you need. Add a new
 
 - A routine request ("make me a flowchart") loads `SKILL.md`, exactly one type reference, and at most the two core references (`primitives-core.md`, `layout-budget.md`), and nothing else.
 - Before drawing, the agent states the chosen type, pattern, size, and planned cuts, then renders.
-- The output is one `.html` file that opens double-clicked, offline, with no network requests beyond Google Fonts, and none at all with system fonts.
-- Screen readers announce the diagram's title and description; `prefers-reduced-motion` shows the complete static frame.
-- `python3 skills/diagram-design/scripts/self_check.py <file>` prints `OK` on the generated file (add `--offline` to also fail on the Google Fonts link).
-- After brand onboarding, new diagrams use your site's paper, ink, accent, and fonts, with a fidelity receipt naming each.
+- The output is one `.html` file that opens double-clicked, offline, with no network requests.
+- Screen readers announce the diagram's title and description; all meaning is present in one static frame.
+- `python3 skills/diagram-design/scripts/self_check.py <file>` prints `OK` on the generated file.
+- After brand onboarding, new diagrams use the supplied local paper, ink, accent, and font stacks, with their sources recorded.
 
 If any of these fail, that's a bug worth filing.
 
 ## The design system (in one paragraph)
 
-One accent color, 1 or 2 focal elements per diagram. Three font families: Instrument Serif (title + italic callouts), Geist sans (node names), Geist Mono (technical sublabels). 1px hairline borders, no shadows, max border-radius 10px. Every coordinate, width, and gap is divisible by 4. That rule is non-negotiable; it's what keeps the diagrams from feeling AI-generated. Mono is for technical content (ports, URLs, field types), not a blanket "dev" aesthetic. Accent-tinted focal nodes draw the eye to the 1 or 2 things that matter. Full spec in [`SKILL.md`](skills/diagram-design/SKILL.md#5-design-system).
+One accent color, 1 or 2 focal elements per diagram. Three optional installed font families: Instrument Serif (title + italic callouts), Geist sans (node names), Geist Mono (technical sublabels), each with a generic fallback. 1px hairline borders, no shadows, max border-radius 10px. Every coordinate, width, and gap is divisible by 4. That rule is non-negotiable; it's what keeps the diagrams from feeling AI-generated. Mono is for technical content (ports, URLs, field types), not a blanket "dev" aesthetic. Accent-tinted focal nodes draw the eye to the 1 or 2 things that matter. Full spec in [`SKILL.md`](skills/diagram-design/SKILL.md#5-design-system).
 
 ---
 
@@ -719,18 +643,10 @@ Before drawing, ask: *would a reader learn more from this than from a well-writt
 
 ## Contributing
 
-Contributions are welcome: new diagram types, import grammar support, examples, docs, and tooling. [CONTRIBUTING.md](CONTRIBUTING.md) covers the validation gates (skin lint, render lint, geometry and data-encoding verifiers, docs sync), how each one works, and the CI setup. Every pull request runs them on Linux, Windows, and macOS. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards and [CHANGELOG.md](CHANGELOG.md) for release history.
+Contributions are welcome: new diagram types, import grammar support, examples, docs, and tooling. [CONTRIBUTING.md](CONTRIBUTING.md) covers the validation gates (static safety, skin lint, geometry and data-encoding verifiers, docs sync), how each one works, and the CI setup. Every pull request runs them on Linux, Windows, and macOS. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards and [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
 
 ## About
 
-Made by **Cathryn Lavery**. I write about AI, entrepreneurship, and designing nice-looking things at [littlemight.com](https://littlemight.com), blog + newsletter.
-
-Other things I've made:
-
-- [ShipRank](https://shiprank.dev): a public leaderboard for lines shipped.
-- [The Non-Technical Technical Dictionary](https://nontechnical.dev): tech and AI terms explained in plain English, one analogy at a time.
-- [BestSelf.co](https://bestself.co): the SELF Journal and other paper tools for getting things done. Started on Kickstarter in 2015, sold to private equity in 2022, bought back 14 months later ([the story](https://www.littlemight.com/100-days-lessons-from-buying-my-business-back-from-private-equity/)).
-
-If this is useful, **star the repo** and come [say hi on X](https://x.com/cathrynlavery).
+Maintained here by [AndrewGodlewsky](https://github.com/AndrewGodlewsky). Originally created by **Cathryn Lavery** at [LittleMight](https://littlemight.com). The original MIT copyright and license are preserved in [LICENSE](LICENSE).

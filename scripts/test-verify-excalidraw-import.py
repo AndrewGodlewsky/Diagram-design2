@@ -35,7 +35,7 @@ def main() -> int:
         shutil.copytree(
             ROOT,
             clone,
-            ignore=shutil.ignore_patterns(".git", "__pycache__"),
+            ignore=shutil.ignore_patterns(".git", "__pycache__", "dist", "node_modules"),
         )
 
         valid = run_verifier(clone)

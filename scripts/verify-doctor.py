@@ -9,13 +9,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import platform
-import shutil
-import signal
-import subprocess
 import sys
-import tempfile
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,13 +25,10 @@ MAINTAINER_MARKERS = (
 )
 
 EXPECTED_SCRIPTS = (
-    Path("scripts/verify-drawio-import.py"),
-    Path("scripts/verify-mermaid-import.py"),
-    Path("scripts/verify-excalidraw-import.py"),
-    Path("scripts/verify-motion.py"),
-    Path("scripts/lint-skin.py"),
-    Path("scripts/verify-docs-sync.py"),
+    "self_check.py", "static_safety.py", "export_svg.py",
+    "drawio_extract.py", "mermaid_extract.py", "excalidraw_extract.py",
 )
+
 
 ROUTING_SURFACES = {
     Path("commands/export-diagram.md"): "references/export.md",
@@ -52,7 +44,6 @@ ROUTING_SURFACES = {
     Path("prompts/doctor.md"): "references/doctor.md",
 }
 
-VERSION_PROBE = "import sys; print('.'.join(str(p) for p in sys.version_info[:3]))"
 
 PASS = "pass"
 WARN = "warn"
@@ -67,222 +58,14 @@ class CheckResult:
     fix: str | None = None
 
 
-def run_command(
-    command: list[str], *, timeout: float | None = None
-) -> subprocess.CompletedProcess[str]:
-    """Run a command, reporting a failure to launch the way a bad exit is reported.
-
-    A name on PATH is not always a runnable program: an App Execution Alias for
-    an uninstalled app, a dangling symlink, or a file without the exec bit raise
-    instead of exiting. Every caller here only asks whether the command answered,
-    so surface that as a non-zero result carrying the OS error rather than letting
-    it unwind the whole doctor.
-    """
-    try:
-        if timeout is None:
-            return subprocess.run(
-                command, capture_output=True, text=True, encoding="utf-8",
-                errors="replace", check=False,
-            )
-        # Descendants can inherit capture pipes. Temporary files let waiting and
-        # cleanup stay bounded even when a child keeps its output handle open.
-        with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
-            process = subprocess.Popen(
-                command, stdout=stdout, stderr=stderr,
-                start_new_session=(os.name == "posix"),
-            )
-            try:
-                process.wait(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                cleanup_error = ""
-                if os.name == "posix":
-                    try:
-                        os.killpg(process.pid, signal.SIGKILL)
-                    except ProcessLookupError:
-                        pass
-                else:
-                    # /T targets only descendants of this freshly owned probe.
-                    try:
-                        cleanup = subprocess.run(
-                            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                            timeout=2, check=False,
-                        )
-                        if cleanup.returncode != 0:
-                            cleanup_error = " Process-tree cleanup failed."
-                    except (OSError, subprocess.TimeoutExpired):
-                        cleanup_error = " Process-tree cleanup failed."
-                    process.kill()
-                try:
-                    process.wait(timeout=2)
-                except subprocess.TimeoutExpired:
-                    cleanup_error += " Probe cleanup did not finish."
-                return subprocess.CompletedProcess(
-                    command, 1, "",
-                    f"Command timed out after {timeout:g} seconds.{cleanup_error}",
-                )
-            stdout.seek(0)
-            stderr.seek(0)
-            return subprocess.CompletedProcess(
-                command, process.returncode,
-                stdout.read().decode("utf-8", errors="replace"),
-                stderr.read().decode("utf-8", errors="replace"),
-            )
-    except OSError as exc:
-        return subprocess.CompletedProcess(command, 1, "", str(exc))
 
 
-@dataclass
-class PythonProbe:
-    """What resolving an interpreter name actually turned up."""
-
-    command: str | None = None
-    executable: str | None = None
-    version: str | None = None
-    error: str | None = None
 
 
-def probe_python_command() -> PythonProbe:
-    """Resolve python3 first, then python, preferring a name that actually runs.
-
-    Presence on PATH is not evidence of an interpreter. On Windows the
-    ``python3`` App Execution Alias ships on PATH by default and exits
-    non-zero with a Microsoft Store prompt, so a machine with a working
-    ``python`` is otherwise reported as having no usable Python at all. Fall
-    through to the next candidate when the preferred name cannot report its
-    own version, and keep the first name found so a total failure still says
-    what was tried.
-    """
-    fallback = PythonProbe()
-    for candidate in ("python3", "python"):
-        executable = shutil.which(candidate)
-        if executable is None:
-            continue
-        probe = run_command([candidate, "-c", VERSION_PROBE])
-        version = probe.stdout.strip()
-        if probe.returncode == 0 and version:
-            return PythonProbe(command=candidate, executable=executable, version=version)
-        if fallback.command is None:
-            fallback = PythonProbe(
-                command=candidate,
-                executable=executable,
-                error=probe.stderr.strip() or "version probe failed",
-            )
-    return fallback
 
 
-def check_python_runtime() -> tuple[CheckResult, str | None]:
-    probe = probe_python_command()
-    command_name, executable = probe.command, probe.executable
-    if command_name is None or executable is None:
-        return (
-            CheckResult(
-                name="Python runtime",
-                status=FAIL,
-                message="No python3 or python command was found on PATH.",
-                fix="Install Python 3.10+ and ensure python3 or python is available on PATH.",
-            ),
-            None,
-        )
-
-    if probe.version is None:
-        detail = probe.error or "version probe failed"
-        return (
-            CheckResult(
-                name="Python runtime",
-                status=FAIL,
-                message=f"Could not query version via {command_name}: {detail}",
-                fix="Ensure the selected Python command is executable and not blocked by shell aliases.",
-            ),
-            command_name,
-        )
-
-    version_text = probe.version
-    try:
-        major, minor, patch = (int(part) for part in version_text.split(".", 2))
-    except ValueError:
-        return (
-            CheckResult(
-                name="Python runtime",
-                status=FAIL,
-                message=f"Unexpected Python version format from {command_name}: {version_text!r}",
-                fix="Use a standard CPython installation with semantic version output.",
-            ),
-            command_name,
-        )
-
-    if (major, minor) < (3, 10):
-        return (
-            CheckResult(
-                name="Python runtime",
-                status=FAIL,
-                message=(
-                    f"Python {major}.{minor}.{patch} found via {command_name} at {executable}; "
-                    "Diagram Design requires Python >= 3.10."
-                ),
-                fix="Upgrade Python to 3.10+ and re-run /diagram-design:doctor.",
-            ),
-            command_name,
-        )
-
-    return (
-        CheckResult(
-            name="Python runtime",
-            status=PASS,
-            message=f"Python {major}.{minor}.{patch} found via {command_name} at {executable}.",
-        ),
-        command_name,
-    )
 
 
-def check_playwright(python_cmd: str | None) -> CheckResult:
-    if python_cmd is None:
-        return CheckResult(
-            name="Playwright PNG export readiness",
-            status=FAIL,
-            message="Playwright check skipped because no Python command was available.",
-            fix="Provision an approved Playwright renderer after resolving Python, then re-run this check.",
-        )
-
-    import_probe = run_command([python_cmd, "-c", "import playwright"])
-    if import_probe.returncode != 0:
-        return CheckResult(
-            name="Playwright PNG export readiness",
-            status=WARN,
-            message="Playwright package is not available in the active Python interpreter.",
-            fix="Provision an approved Playwright renderer in the host environment, then re-run this check.",
-        )
-
-    chromium_probe = run_command(
-        [
-            python_cmd,
-            "-c",
-            (
-                "from playwright.sync_api import sync_playwright\n"
-                "with sync_playwright() as p:\n"
-                "    browser = p.chromium.launch(timeout=5000)\n"
-                "    try:\n"
-                "        print(browser.version)\n"
-                "    finally:\n"
-                "        browser.close()\n"
-            ),
-        ],
-        timeout=10,
-    )
-    if chromium_probe.returncode == 0:
-        return CheckResult(
-            name="Playwright PNG export readiness",
-            status=PASS,
-            message=f"Playwright is installed and Chromium {chromium_probe.stdout.strip()} launches for PNG export.",
-        )
-
-    detail = chromium_probe.stderr.strip() or "Chromium could not be launched"
-    return CheckResult(
-        name="Playwright PNG export readiness",
-        status=WARN,
-        message=f"Playwright is installed but Chromium is not ready: {detail}",
-        fix="Provision an approved browser for the existing Playwright installation, then re-run this check.",
-    )
 
 
 def is_maintainer_checkout(root: Path) -> bool:
@@ -301,27 +84,6 @@ def resolve_skill_file(root: Path) -> Path | None:
     return None
 
 
-def check_expected_scripts(root: Path) -> CheckResult:
-    if not is_maintainer_checkout(root):
-        return CheckResult(
-            name="Expected script presence",
-            status=PASS,
-            message="Installed-skill mode detected; maintainer-only repository scripts are not required.",
-        )
-
-    missing = [path.as_posix() for path in EXPECTED_SCRIPTS if not (root / path).is_file()]
-    if missing:
-        return CheckResult(
-            name="Expected script presence",
-            status=FAIL,
-            message="Missing required script(s): " + ", ".join(missing),
-            fix="Restore missing scripts from the repository root and re-run diagnostics.",
-        )
-    return CheckResult(
-        name="Expected script presence",
-        status=PASS,
-        message=f"All required scripts are present ({len(EXPECTED_SCRIPTS)} checked).",
-    )
 
 
 def check_routing_surfaces(root: Path) -> CheckResult:
@@ -453,12 +215,27 @@ def print_report(checks: list[CheckResult], strict: bool, emit_json: bool) -> in
     return exit_code
 
 
+def check_python_runtime() -> CheckResult:
+    supported = sys.version_info >= (3, 10)
+    return CheckResult("Python runtime", PASS if supported else FAIL,
+                       f"Running Python {sys.version.split()[0]}; standard library only.",
+                       None if supported else "Run with Python 3.10 or newer.")
+
+
+def check_expected_scripts(root: Path) -> CheckResult:
+    skill = resolve_skill_file(root)
+    if skill is None:
+        return CheckResult("Packaged scripts", FAIL, "SKILL.md is missing.", "Restore the skill package.")
+    missing = [name for name in EXPECTED_SCRIPTS if not (skill.parent / "scripts" / name).is_file()]
+    return CheckResult("Packaged scripts", FAIL if missing else PASS,
+                       "Missing: " + ", ".join(missing) if missing else "All local parsing and SVG helpers are present.",
+                       "Restore missing package files." if missing else None)
+
+
 def run_doctor(root: Path, cwd: Path, strict: bool, emit_json: bool) -> int:
     checks: list[CheckResult] = []
 
-    python_check, python_cmd = check_python_runtime()
-    checks.append(python_check)
-    checks.append(check_playwright(python_cmd))
+    checks.append(check_python_runtime())
     checks.append(check_expected_scripts(root))
     checks.append(check_routing_surfaces(root))
     checks.append(check_common_path_mistakes(root, cwd))

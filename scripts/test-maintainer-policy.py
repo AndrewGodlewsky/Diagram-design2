@@ -95,8 +95,6 @@ REQUIRED_COMMANDS = {
     "python3 scripts/build-axonometric-plan-examples.py --check",
     "python3 scripts/verify-axonometric-plan.py --all",
     "python3 scripts/test-verify-axonometric-plan.py",
-    "python3 scripts/lint-render.py --self-test",
-    "python3 scripts/lint-render.py --all",
 }
 
 VERSION_GATE = "python3 scripts/verify-plugin-package.py --require-no-bump <base-ref>"
@@ -349,6 +347,8 @@ def verifier_coverage_failures(commands: set[str], scripts: set[str]) -> list[st
 
 
 SYNTHETIC_POLICY_COMMANDS = [
+    "python3 scripts/lint-render.py --self-test",
+    "python3 scripts/lint-render.py --all",
     "python3 scripts/test-maintainer-policy.py",
     "python3 scripts/verify-plugin-package.py --require-no-bump origin/main",
     "npx --yes @anthropic-ai/claude-code@2.1.229 plugin validate . --strict",
@@ -358,8 +358,6 @@ SYNTHETIC_POLICY_COMMANDS = [
     "python3 scripts/verify-polar.py",
     "python3 scripts/test-build-readme-thumbs.py",
     "python3 scripts/build-readme-thumbs.py --check",
-    "python3 scripts/lint-render.py --self-test",
-    "python3 scripts/lint-render.py --all",
     "python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- "
     "skills/diagram-design/assets/icons.html "
     "skills/diagram-design/references/primitive-icons.md",

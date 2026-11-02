@@ -1,6 +1,6 @@
 ---
 description: Redraw an Excalidraw board as an editorial diagram at a chosen format, size, and detail level
-argument-hint: <excalidraw-file> [--format=html|svg|png|html+png] [--size=<preset>] [--detail=faithful|balanced|simplified] [--audience=engineer|mixed|executive] [--type=<diagram-type>] [--variant=light|dark|full] [--output=<path>]
+argument-hint: <excalidraw-file> [--format=html|svg] [--size=<preset>] [--detail=faithful|balanced|simplified] [--audience=engineer|mixed|executive] [--type=<diagram-type>] [--variant=light|dark|full] [--output=<path>]
 allowed-tools:
   - Read
   - Write
@@ -27,7 +27,7 @@ Accepts `.excalidraw` and `.excalidraw.json` scenes. PNG/SVG exports are rejecte
 
 ## Flags
 
-- `--format` — `html` (default), `svg`, `png`, or `html+png`. Non-HTML formats are produced from HTML through `references/export.md`.
+- `--format` — `html` (default) or `svg`. Non-HTML formats are produced from HTML through `references/export.md`.
 - `--size` — any preset in `output-spec.md` §2: `doc-inline`, `doc-wide`, `slide-16x9`, `slide-4x3`, `social-og`, `social-square`, `print-a4-landscape`, `print-a3-landscape`, `print-letter-landscape`, `fit`.
 - `--detail` — `faithful` (≤24 nodes, zoned), `balanced` (≤12), `simplified` (≤7).
 - `--audience` — `engineer`, `mixed`, `executive`. Governs wording, not element count.

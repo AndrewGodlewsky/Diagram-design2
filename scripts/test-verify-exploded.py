@@ -26,7 +26,6 @@ BUILDER = ROOT / "scripts/build-exploded-examples.py"
 ASSETS = ROOT / "skills/diagram-design/assets"
 STACK = ASSETS / "example-exploded.html"
 PHONE = ASSETS / "example-exploded-phone.html"
-ANIMATED = ASSETS / "example-exploded-phone-animated.html"
 SHIPPED = sorted(ASSETS.glob("example-exploded*.html"))
 
 
@@ -67,7 +66,6 @@ def main() -> int:
     failures: list[str] = []
     stack = STACK.read_text(encoding="utf-8")
     phone = PHONE.read_text(encoding="utf-8")
-    animated = ANIMATED.read_text(encoding="utf-8")
     module = builder()
 
     for path in SHIPPED:
@@ -184,9 +182,6 @@ def main() -> int:
         "trace line solid": (
             once(r'(data-role="trace"[^>]*?) stroke-dasharray="4,3"', r"\1", stack),
             "trace line must be dashed"),
-        "animated lift disagrees with geometry": (
-            once(r'(--lift:)(-?\d+(?:\.\d+)?)', lambda m: f"{m.group(1)}{float(m.group(2)) + 12:g}", animated),
-            "minus closed z"),
         "static part positioned by style": (
             once(r'(data-part="logic")', r'\1 style="transform:translateY(-8px)"', stack),
             "carries a style attribute"),

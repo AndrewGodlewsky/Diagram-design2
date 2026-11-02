@@ -877,8 +877,6 @@ def positioned_tspan(body: str) -> bool:
     return False
 
 
-def font_stylesheet(href: str) -> bool:
-    return href.startswith("https://fonts.googleapis.com/")
 
 
 def nonrendering_spans(source: str) -> list:
@@ -1552,10 +1550,8 @@ def check_structure(source: str, items: list, findings: list, name: str) -> None
         rel = attrs.get("rel", "").casefold().split()
         if "stylesheet" not in rel:
             continue
-        if font_stylesheet(attrs.get("href", "").strip()):
-            continue
         findings.append(
-            "%s:%d: a stylesheet link other than the font link can restyle "
+            "%s:%d: a stylesheet link can restyle "
             "a box the attributes never state"
             % (name, line_of(source, match.start()))
         )

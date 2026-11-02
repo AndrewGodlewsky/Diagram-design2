@@ -17,23 +17,10 @@ Infer choices that are clear from the request (for example, "for my deck" implie
 
 | Format | Deliverable | Keeps | Drops |
 |---|---|---|---|
-| `html` | self-contained `.html` (default) | header, diagram, summary cards, footer, live fonts | nothing |
-| `svg` | `.svg` next to the source | the `<svg>` node, vector text | editorial wrapper; fonts substitute in offline tools |
-| `png` | `.png` at `device_scale_factor` | pixels exactly as the browser renders them | vector editability |
-| `html+png` | both | — | — |
+| `html` | self-contained `.html` (default) | header, diagram, cards, footer | nothing |
+| `svg` | standalone `.svg` | diagram and vector text | editorial wrapper |
 
-Always generate the HTML first — `svg` and `png` are produced *from* it via [`export.md`](export.md). Never hand-author an SVG file directly; the HTML is the source of truth and the only artifact the taste gate (SKILL.md §9) is written against.
-
-Pick by destination:
-
-| Destination | Format | Size preset |
-|---|---|---|
-| Blog post, README, docs site | `html` (embed) or `png` | `doc-inline` |
-| Keynote / PowerPoint / Google Slides | `png` @2 | `slide-16x9` |
-| Figma / Illustrator / further editing | `svg` | `fit` |
-| X / LinkedIn / OG link card | `png` @2 | `social-og` |
-| Printed handout, PDF deck | `png` @3 | `print-a4-landscape` |
-| Confluence / Notion / internal wiki | `png` @2 | `doc-wide` |
+Generate HTML first and export SVG with [export.md](export.md). Both formats are static and local-only. Choose `html` for a complete editorial page and `svg` for vector hand-off to a compatible editor or presentation tool. Size presets describe layout, not raster resolution.
 
 ---
 
@@ -41,18 +28,18 @@ Pick by destination:
 
 The preset sets the SVG `viewBox`. Every value below is divisible by 4, so the grid rule in SKILL.md §7 still holds.
 
-| Preset | viewBox | Aspect | PNG @2 | Type ramp | Use |
-|---|---|---|---|---|---|
-| `doc-inline` (default) | `0 0 960 600` | 8:5 | 1920×1200 | standard | Body-width diagram in a post or README |
-| `doc-wide` | `0 0 1280 720` | 16:9 | 2560×1440 | standard | Full-width docs, wiki pages |
-| `slide-16x9` | `0 0 1280 720` | 16:9 | 2560×1440 | presentation | Deck slide, projected |
-| `slide-4x3` | `0 0 1024 768` | 4:3 | 2048×1536 | presentation | Legacy deck templates |
-| `social-og` | `0 0 1200 632` | ~1.9:1 | 2400×1264 | presentation | Link preview card |
-| `social-square` | `0 0 1080 1080` | 1:1 | 2160×2160 | presentation | Feed post, carousel |
-| `print-a4-landscape` | `0 0 1120 792` | ~1.41:1 | @3 → 3360×2376 | print | A4 landscape, ~10mm margins at 96dpi |
-| `print-a3-landscape` | `0 0 1584 1120` | ~1.41:1 | @3 → 4752×3360 | print | A3 landscape, ~10mm margins at 96dpi |
-| `print-letter-landscape` | `0 0 1056 816` | ~1.29:1 | @3 → 3168×2448 | print | US Letter landscape |
-| `fit` | derived from content | any | @2 | standard | Vector hand-off; no fixed frame |
+| Preset | viewBox | Aspect | Type ramp | Use |
+|---|---|---|---|---|
+| `doc-inline` (default) | `0 0 960 600` | 8:5 | standard | Body-width diagram in a post or README |
+| `doc-wide` | `0 0 1280 720` | 16:9 | standard | Full-width docs, wiki pages |
+| `slide-16x9` | `0 0 1280 720` | 16:9 | presentation | Deck slide, projected |
+| `slide-4x3` | `0 0 1024 768` | 4:3 | presentation | Legacy deck templates |
+| `social-og` | `0 0 1200 632` | ~1.9:1 | presentation | Link preview card |
+| `social-square` | `0 0 1080 1080` | 1:1 | presentation | Feed post, carousel |
+| `print-a4-landscape` | `0 0 1120 792` | ~1.41:1 | print | A4 landscape, ~10mm margins at 96dpi |
+| `print-a3-landscape` | `0 0 1584 1120` | ~1.41:1 | print | A3 landscape, ~10mm margins at 96dpi |
+| `print-letter-landscape` | `0 0 1056 816` | ~1.29:1 | print | US Letter landscape |
+| `fit` | derived from content | any | standard | Vector hand-off; no fixed frame |
 
 ### Holding the canvas on a narrow screen
 
@@ -97,10 +84,7 @@ because a media query adds no specificity and a later plain rule would win:
 }
 ```
 
-`scripts/lint-render.py --all` renders every template at 390px and fails on
-page overflow, an unreachable clipped SVG, a missing local scroller, or a
-`min-width` that disagrees with the viewBox — including an absent one, which
-lets the SVG shrink into the phone and takes the type ramp with it.
+Keep the local scrolling wrapper and print rules above in every preset. Structural checks do not measure painted text or guarantee clipping-free output on every system font.
 
 ### Deriving `fit`
 
@@ -137,7 +121,7 @@ Anything else is a bug in the diagram, not a new size. The one standing carve-ou
 
 ### Registered legacy sizes
 
-Thirty-three declared sizes across sixteen files predate this contract. They are recorded here so the rule above is exact rather than aspirational, and frozen so the list cannot quietly grow. `scripts/verify-docs-sync.py` reads these rows against the files and fails if one gains an off-ramp size, loses one, or drops off disk.
+The declared sizes below predate this contract. They are recorded here so the rule above is exact rather than aspirational, and frozen so the list cannot quietly grow. `scripts/verify-docs-sync.py` reads these rows against the files and fails if one gains an off-ramp size, loses one, or drops off disk.
 
 Each is registered against the font carrying it, because that is what the sweep checks. It classifies every element first, resolving `class` attributes through the stylesheet, `var(--font-mono)` back to the family it names, and a `{node-name}` token to the ramp row that owns it, then applies only the exceptions open to that font. The canonical role sizes stay one union, so a size on the ramp for any role is on contract wherever it appears. An element whose font it cannot read gets no exception at all. It reads the `<svg>` and any CSS rule worn by an element inside it, so the prose around a diagram does not count as diagram type.
 
@@ -149,12 +133,10 @@ Each is registered against the font carrying it, because that is what the sweep 
 | `assets/example-nested.html` | Instrument Serif 14, Instrument Serif 14 | two italic serif asides |
 | `assets/example-nested-dark.html` | Instrument Serif 14, Instrument Serif 14 | two italic serif asides |
 | `assets/example-nested-full.html` | Instrument Serif 14, Instrument Serif 14 | two italic serif asides |
-| `assets/example-paved-road-animated.html` | Geist 600 13 | boundary node name |
 | `assets/example-process.html` | Geist Mono 6 | role chip |
 | `assets/example-process-dark.html` | Geist Mono 6 | role chip |
 | `assets/example-process-full.html` | Geist Mono 6 | role chip |
 | `assets/example-quadrant-consultant.html` | Geist 600 13 | inline dot glyph in a `tspan` |
-| `assets/example-queue-animated.html` | Geist 600 13, Geist 600 22, Geist 600 24 | state caption and two fill counters |
 | `assets/example-treemap.html` | Geist 600 7, Geist 600 7, Geist 600 13, Geist 600 13 | two cell index glyphs and two cell names |
 | `assets/example-treemap-dark.html` | Geist 600 7, Geist 600 7, Geist 600 13, Geist 600 13 | two cell index glyphs and two cell names |
 | `assets/example-treemap-full.html` | Geist 600 7, Geist 600 7, Geist 600 13, Geist 600 13 | two cell index glyphs and two cell names |
@@ -238,7 +220,7 @@ Geist has no CJK coverage. When labels contain Japanese, Chinese, or Korean text
 <text font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">認證服務</text>
 ```
 
-These stacks lead with the default skin's sans. Under a custom skin, lead with the `node-name` family instead and keep the CJK fallbacks after it. The Hiragino/Yu Gothic stack carries no Hangul glyphs, so Korean labels need the Korean stack — don't reuse the Japanese one. Noto Sans KR ships in the skin's font link, so it leads that stack and the local families follow it; the register, floor, and title rules Korean needs beyond the font live in [`style-guide.md`](style-guide.md#korean-labels). Japanese fonts also cover only a subset of the Chinese character set and render Simplified forms with Japanese glyph variants, so Chinese labels need a Chinese stack; Simplified and Traditional are separate stacks for the same reason. Noto Sans TC now ships in the link too, so it leads the Traditional stack and the local families follow; the register, floor, and title rules Traditional Chinese needs beyond the font live in [`style-guide.md`](style-guide.md#traditional-chinese-labels). For mono sublabels use `'Geist Mono', 'Noto Sans Mono CJK JP', monospace` (Japanese), `'Geist Mono', 'Noto Sans Mono CJK KR', monospace` (Korean), or `'Geist Mono', 'Noto Sans Mono CJK SC', monospace` / `'Geist Mono', 'Noto Sans Mono CJK TC', monospace` (Chinese). Budget **1em per full-width CJK glyph**, not a small percentage over the average Latin glyph; `verify-treemap.py` uses that conservative contract for Unicode wide/full-width characters and treats combining marks as non-advancing. Prefer 12px names over 8px sublabels for CJK; Hangul and Han go muddy below 12px, so treat 12px as the floor rather than 10px. Actual width still varies by fallback font, so run the relevant geometry verifier after translating labels.
+These stacks lead with the default skin's sans. Under a custom skin, lead with the `node-name` family instead and keep the CJK fallbacks after it. The Hiragino/Yu Gothic stack carries no Hangul glyphs, so Korean labels need the Korean stack — don't reuse the Japanese one. Noto Sans KR is optional when installed; the register, floor, and title rules Korean needs beyond the font live in [`style-guide.md`](style-guide.md#korean-labels). Japanese fonts also cover only a subset of the Chinese character set and render Simplified forms with Japanese glyph variants, so Chinese labels need a Chinese stack; Simplified and Traditional are separate stacks for the same reason. Noto Sans TC is also optional when installed; the register, floor, and title rules Traditional Chinese needs beyond the font live in [`style-guide.md`](style-guide.md#traditional-chinese-labels). For mono sublabels use `'Geist Mono', 'Noto Sans Mono CJK JP', monospace` (Japanese), `'Geist Mono', 'Noto Sans Mono CJK KR', monospace` (Korean), or `'Geist Mono', 'Noto Sans Mono CJK SC', monospace` / `'Geist Mono', 'Noto Sans Mono CJK TC', monospace` (Chinese). Budget **1em per full-width CJK glyph**, not a small percentage over the average Latin glyph; `verify-treemap.py` uses that conservative contract for Unicode wide/full-width characters and treats combining marks as non-advancing. Prefer 12px names over 8px sublabels for CJK; Hangul and Han go muddy below 12px, so treat 12px as the floor rather than 10px. Actual width still varies by fallback font, so run the relevant geometry verifier after translating labels.
 
 ---
 

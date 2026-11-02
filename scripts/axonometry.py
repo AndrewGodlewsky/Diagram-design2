@@ -10,12 +10,8 @@ verifiers reimplement the projection on purpose and do not import this module.
 from __future__ import annotations
 
 import math
-import re
 from dataclasses import dataclass
-from pathlib import Path
 
-ASSETS = Path(__file__).resolve().parent.parent / "skills/diagram-design/assets"
-MOTION_TEMPLATE = ASSETS / "template-motion.html"
 
 S2 = math.sqrt(2)
 
@@ -175,7 +171,7 @@ def styles(sk, focal):
 
 # ---------------------------------------------------------------- pages
 
-FONT_LINK = "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap"
+FONT_LINK = ""  # Compatibility for callers formatting the static templates.
 
 MINIMAL = """<!DOCTYPE html>
 <html lang="en">
@@ -183,7 +179,6 @@ MINIMAL = """<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
-  <link href="{font}" rel="stylesheet">
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
     :root {{
@@ -260,7 +255,6 @@ FULL = """<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
-  <link href="{font}" rel="stylesheet">
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
     :root {{ --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#5a6580; --color-rule:rgba(45,49,66,0.12); --color-accent:#bf4520; --color-link:#2e5aa8; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }}
@@ -315,33 +309,6 @@ FULL = """<!DOCTYPE html>
 </body>
 </html>
 """
-
-def animated_page(title: str, desc: str, slug: str, body: str, vh: int, steps: int, eyebrow: str, css: str, noscript: str) -> str:
-    """Start from template-motion.html so the controller, controls, and fallbacks stay canonical."""
-    src = MOTION_TEMPLATE.read_text(encoding="utf-8")
-    src = src.replace("<title>Motion diagram template</title>", f"<title>{title}</title>", 1)
-    src = src.replace("--motion-step: 480ms;", "--motion-step: 600ms;", 1)
-    src = src.replace("--motion-hold: 720ms;", "--motion-hold: 900ms;", 1)
-    src = src.replace("--motion-total: 3600ms;", f"--motion-total: {steps * 900}ms;", 1)
-    src = src.replace("min-width: 960px;", "min-width: 1000px;", 1)
-    src = src.replace("  </style>", css + "  </style>", 1)
-    start = src.index("  <!-- Replace template-motion")
-    end = src.index("    <div data-motion-controls")
-    main = (f'  <main data-motion-root data-motion-mode="reveal" data-step-count="{steps}" data-step-current="{steps}" data-frame="static" data-static-frame="complete">\n'
-            f'    <p class="eyebrow">{eyebrow}</p>\n'
-            f'    <h1>{title}</h1>\n\n'
-            f'    <div class="diagram-container">\n'
-            f'      <svg viewBox="0 0 1000 {vh}" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="{slug}-title {slug}-desc">\n'
-            f'        <title id="{slug}-title">{title}</title>\n'
-            f'        <desc id="{slug}-desc">{desc}</desc>\n'
-            f'        {body}\n'
-            f'      </svg>\n'
-            f'    </div>\n\n')
-    src = src[:start] + main + src[end:]
-    src = re.sub(r'Step <span data-motion-step-label>\d+</span> of \d+',
-                 f'Step <span data-motion-step-label>{steps}</span> of {steps}', src, count=1)
-    src = src.replace("The complete final diagram is shown above.", noscript, 1)
-    return src
 
 
 def cards_html(cards):

@@ -10,7 +10,6 @@ from pathlib import Path
 import re
 import sys
 from typing import Sequence
-from urllib.parse import urlsplit
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -158,13 +157,6 @@ def _stylesheet_can_target_chart(css: str) -> bool:
     return False
 
 
-def _allowed_stylesheet(href: str) -> bool:
-    parsed = urlsplit(href.strip())
-    return (
-        parsed.scheme == "https"
-        and parsed.hostname == "fonts.googleapis.com"
-        and parsed.path == "/css2"
-    )
 
 
 def _style_property(attrs: dict[str, str], property_name: str) -> str | None:
@@ -461,7 +453,7 @@ def check(path: Path) -> list[str]:
         findings.append("CSS visibility rules can hide chart ancestors")
     if any(_stylesheet_can_target_chart(css) for css in parser.style_blocks):
         findings.append("CSS selectors must not target data-polar-chart")
-    if any(not _allowed_stylesheet(href) for href in parser.stylesheet_urls):
+    if parser.stylesheet_urls:
         findings.append("external stylesheets are forbidden in polar documents")
     for tag, key in chart.duplicate_attributes:
         findings.append(f"duplicate attribute {key} on <{tag}>")

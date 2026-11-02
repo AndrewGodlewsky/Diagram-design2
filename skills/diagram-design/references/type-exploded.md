@@ -68,15 +68,6 @@ Three levels at most: the form (the rounded prism), insets on its top face (a sc
 
 One part at most wears the accent, under the SKILL.md rule of 1 to 2 focal elements. The other parts stay neutral; do not fade them with opacity, because a translucent part shows the edges behind it.
 
-## Optional motion
-
-An exploded view may open as the assembled object and explode once, because watching the parts lift shows how they fit together. Use the pinned controller from `assets/template-motion.html` in `reveal` mode, per `animation.md`:
-
-- The source file is the exploded frame. Every part group carries `data-motion-item`, a `data-step` counted from the top level down (top level lifts first), and `style="--lift:Npx"` where `N` is the part's exploded `z` minus its assembled `z`. In this projection a straight-up move in model space is a straight-up move on screen, so one `translateY(var(--lift))` is the whole explode.
-- The bottom level does not move. Its label and the trace lines arrive together as the last step.
-- Each part's label hides at the closed frame and fades in after its part settles. Hide instantly and delay only the reveal, or labels pile up on the closed object for the first half second.
-- No JavaScript, `prefers-reduced-motion: reduce`, print, `?motion=static`, and export all show the exploded frame.
-- The lift is the one scoped exception to the 24px translation limit in `animation.md`, recorded in the repository as ADR 0013. Nothing else in the figure moves.
 
 ## Metadata contract
 
@@ -110,6 +101,3 @@ The silhouette verifier accepts signed decimal and scientific-notation coordinat
 - `assets/example-exploded-unboxing.html`, `-dark`, `-full`: packaging with a telescoping lid, a product and cable on one level, an insert, and a box
 - `assets/example-exploded-ai-stack.html`, `-dark`, `-full`: an AI agent stack with a secrets vault, tools, skills as small cards on one layer, the agent harness around the model, and the interface
 - `assets/example-exploded-keyboard.html`, `-dark`, `-full`: a mechanical keyboard with a case tray, PCB, plate, a grid of switches, and a grid of keycaps
-- `assets/example-exploded-phone-animated.html`: the phone assembled, then exploded once
-- `assets/example-exploded-unboxing-animated.html`: the box closed, then unpacked once
-- `assets/example-exploded-ai-stack-animated.html`, `assets/example-exploded-keyboard-animated.html`: the stack and the keyboard assembled, then exploded once
