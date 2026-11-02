@@ -303,7 +303,7 @@ FULL = """<!DOCTYPE html>
 
     <div class="footer">
       <span>{footer}</span>
-      <span>example · diagram design</span>
+      <span>example · diagram design local</span>
     </div>
   </div>
 </body>

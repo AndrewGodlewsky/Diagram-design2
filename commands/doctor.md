@@ -1,5 +1,5 @@
 ---
-description: Run one-shot environment diagnostics for Diagram Design readiness
+description: Run one-shot environment diagnostics for Diagram Design Local readiness
 argument-hint: "[--strict] [--json]"
 allowed-tools:
   - Read
@@ -7,7 +7,7 @@ allowed-tools:
   - Glob
 ---
 
-Run environment diagnostics for Diagram Design by following [`skills/diagram-design/references/doctor.md`](../skills/diagram-design/references/doctor.md). Treat that reference as the source of truth and do not reimplement its logic here.
+Run environment diagnostics for Diagram Design Local by following [`skills/diagram-design-local/references/doctor.md`](../skills/diagram-design-local/references/doctor.md). Treat that reference as the source of truth and do not reimplement its logic here.
 
 Full argument string: `$ARGUMENTS`
 

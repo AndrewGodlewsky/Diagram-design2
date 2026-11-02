@@ -10,9 +10,9 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "skills/diagram-design/scripts"))
-SELF_CHECK = ROOT / "skills/diagram-design/scripts/self_check.py"
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+sys.path.insert(0, str(ROOT / "skills/diagram-design-local/scripts"))
+SELF_CHECK = ROOT / "skills/diagram-design-local/scripts/self_check.py"
+ASSET_DIR = ROOT / "skills/diagram-design-local/assets"
 TEMPLATE = ASSET_DIR / "template.html"
 STATIC_EXAMPLE = ASSET_DIR / "example-architecture.html"
 

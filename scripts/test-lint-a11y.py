@@ -507,14 +507,14 @@ def main() -> int:
 
         project = directory / "baseline-project"
         (project / "scripts").mkdir(parents=True)
-        (project / "skills/diagram-design/assets").mkdir(parents=True)
-        (project / "skills/diagram-design/references").mkdir(parents=True)
+        (project / "skills/diagram-design-local/assets").mkdir(parents=True)
+        (project / "skills/diagram-design-local/references").mkdir(parents=True)
         shutil.copy2(LINTER, project / "scripts/lint-skin.py")
         shutil.copy2(
-            ROOT / "skills/diagram-design/references/style-guide.md",
-            project / "skills/diagram-design/references/style-guide.md",
+            ROOT / "skills/diagram-design-local/references/style-guide.md",
+            project / "skills/diagram-design-local/references/style-guide.md",
         )
-        project_style = project / "skills/diagram-design/references/style-guide.md"
+        project_style = project / "skills/diagram-design-local/references/style-guide.md"
         project_style.write_text(
             project_style.read_text(encoding="utf-8").replace(
                 "| `title` | Instrument Serif |",
@@ -545,13 +545,13 @@ def main() -> int:
         (project / "scripts/lint-skin-baseline.txt").write_text(
             "example-baseline.html\n", encoding="utf-8"
         )
-        (project / "skills/diagram-design/assets/example-baseline.html").write_text(
+        (project / "skills/diagram-design-local/assets/example-baseline.html").write_text(
             '<svg style="color: #123456"></svg>\n', encoding="utf-8"
         )
         template_svg = VALID_SVG.replace(
             "fixture-title", "[diagram-slug]-title"
         ).replace("fixture-desc", "[diagram-slug]-desc")
-        (project / "skills/diagram-design/assets/template.html").write_text(
+        (project / "skills/diagram-design-local/assets/template.html").write_text(
             '<img src="https://evil.example/template.png">\n' + template_svg,
             encoding="utf-8",
         )

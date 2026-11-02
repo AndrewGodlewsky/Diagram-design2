@@ -12,7 +12,7 @@ spec.loader.exec_module(verify)
 def main() -> int:
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
-        skill = root / "skills/diagram-design"
+        skill = root / "skills/diagram-design-local"
         (skill / "assets").mkdir(parents=True)
         (skill / "scripts").mkdir()
         example = skill / "assets/example-demo.html"

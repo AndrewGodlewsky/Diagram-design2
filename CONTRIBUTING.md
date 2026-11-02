@@ -1,4 +1,4 @@
-# Contributing to Diagram Design
+# Contributing to Diagram Design Local
 
 Read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Work on a branch and keep each change focused. Do not publish a directory listing or merge without the maintainer's authorization.
 
@@ -28,7 +28,7 @@ Do not weaken checks, add baseline exclusions, or change source data to hide a f
 
 ## Versioning and marketplace metadata
 
-Do not bump manifest versions in a pull request. The existing Auto Version Bump workflow owns versions after merge (ADR 0009). Claude, Codex, Factory and Qoder metadata must remain synchronized; Copilot reads the shared Claude manifests. Keep the skill at skills/diagram-design/ and marketplace sources at the repository root. Preserve upstream copyright and historical issue references.
+Do not bump manifest versions in a pull request. The existing Auto Version Bump workflow owns versions after merge (ADR 0009). Claude, Codex, Factory and Qoder metadata must remain synchronized; Copilot reads the shared Claude manifests. Keep the skill at skills/diagram-design-local/ and marketplace sources at the repository root. Preserve upstream copyright and historical issue references.
 
 Descriptions must stay within 500 characters and name every type. Codex listing limits remain enforced by ZIP-package tests. The ZIP builder reads the Git index: stage intended package changes before preparing a release artifact. Do not submit directory listings automatically.
 

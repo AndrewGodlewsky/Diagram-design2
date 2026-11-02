@@ -3,7 +3,7 @@
 
 Every coordinate in the generated files comes from ``iso(x, y, z)``, the 2:1
 dimetric projection documented in
-``skills/diagram-design/references/type-exploded.md``. Nothing is placed by
+``skills/diagram-design-local/references/type-exploded.md``. Nothing is placed by
 hand, so the examples can be rebuilt after any change to the model and
 ``scripts/verify-exploded.py`` can recompute every silhouette from the
 attributes each part declares.
@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagram-design-local/assets"
 from axonometry import (FONT_LINK, FULL, MINIMAL, SKINS, L, M, Proj, Rect,  # noqa: E402
                         cards_html, f, finish, outline, point, prism, solid, styles, walk)
 
@@ -321,7 +321,7 @@ def build_svg(fig: Figure, skin: str, motion: bool, slug: str):
 
 # ---------------------------------------------------------------- pages
 
-EYEBROW = "Exploded axonometric · Diagram Design"
+EYEBROW = "Exploded axonometric · Diagram Design Local"
 
 # ---------------------------------------------------------------- keyboard and agent stack detail
 

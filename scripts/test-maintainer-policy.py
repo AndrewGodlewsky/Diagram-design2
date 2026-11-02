@@ -359,8 +359,8 @@ SYNTHETIC_POLICY_COMMANDS = [
     "python3 scripts/test-build-readme-thumbs.py",
     "python3 scripts/build-readme-thumbs.py --check",
     "python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- "
-    "skills/diagram-design/assets/icons.html "
-    "skills/diagram-design/references/primitive-icons.md",
+    "skills/diagram-design-local/assets/icons.html "
+    "skills/diagram-design-local/references/primitive-icons.md",
 ]
 
 SYNTHETIC_CI = """\
@@ -431,8 +431,8 @@ jobs:
         run: |
           python scripts/build-icons.py
           git diff --ignore-space-at-eol --exit-code -- \\
-            skills/diagram-design/assets/icons.html \\
-            skills/diagram-design/references/primitive-icons.md
+            skills/diagram-design-local/assets/icons.html \\
+            skills/diagram-design-local/references/primitive-icons.md
 
       - name: Generate CI execution summary table
         run: |

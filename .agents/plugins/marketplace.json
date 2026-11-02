@@ -1,11 +1,11 @@
 {
-  "name": "diagram-design",
+  "name": "diagram-design-local",
   "interface": {
-    "displayName": "Diagram Design"
+    "displayName": "Diagram Design Local"
   },
   "plugins": [
     {
-      "name": "diagram-design",
+      "name": "diagram-design-local",
       "source": {
         "source": "local",
         "path": "./"

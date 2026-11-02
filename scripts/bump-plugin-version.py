@@ -17,7 +17,7 @@ MANIFEST_PATHS = (
     Path(".factory-plugin/plugin.json"),
     Path(".qoder-plugin/plugin.json"),
 )
-SKILL_PATH = Path("skills/diagram-design/SKILL.md")
+SKILL_PATH = Path("skills/diagram-design-local/SKILL.md")
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 

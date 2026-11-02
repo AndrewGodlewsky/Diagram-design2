@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "skills/diagram-design/scripts"))
+sys.path.insert(0, str(ROOT / "skills/diagram-design-local/scripts"))
 from static_safety import safety_errors
 
 ALLOWED_MODULES = {
@@ -20,7 +20,7 @@ FORBIDDEN_FILES = ("scripts/export_png.py", "references/animation.md", "assets/t
 
 
 def verify(root: Path) -> list[str]:
-    skill = root / "skills/diagram-design"
+    skill = root / "skills/diagram-design-local"
     errors = []
     for relative in FORBIDDEN_FILES:
         if (skill / relative).exists():

@@ -32,7 +32,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 verify = __import__("verify-box-plot")
 
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagram-design-local/assets"
 SHIPPED = [ASSETS / name for name in (
     "example-box-plot.html", "example-box-plot-dark.html",
     "example-box-plot-full.html",

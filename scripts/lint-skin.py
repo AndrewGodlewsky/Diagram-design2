@@ -18,8 +18,8 @@ from urllib.parse import urlparse
 
 
 ROOT = Path(__file__).resolve().parent.parent
-STYLE_GUIDE = ROOT / "skills/diagram-design/references/style-guide.md"
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+STYLE_GUIDE = ROOT / "skills/diagram-design-local/references/style-guide.md"
+ASSET_DIR = ROOT / "skills/diagram-design-local/assets"
 BASELINE = ROOT / "scripts/lint-skin-baseline.txt"
 
 HEX_RE = re.compile(
@@ -631,7 +631,7 @@ def parse_args():
     parser.add_argument(
         "--all",
         action="store_true",
-        help="lint every skills/diagram-design/assets/example-*.html and template*.html file",
+        help="lint every skills/diagram-design-local/assets/example-*.html and template*.html file",
     )
     parser.add_argument(
         "--baseline",

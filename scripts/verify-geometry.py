@@ -50,7 +50,7 @@ connector never passes because nothing read it.
 
 Usage:
     python3 scripts/verify-geometry.py --all
-    python3 scripts/verify-geometry.py skills/diagram-design/assets/example-x.html
+    python3 scripts/verify-geometry.py skills/diagram-design-local/assets/example-x.html
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+ASSET_DIR = ROOT / "skills/diagram-design-local/assets"
 
 NODE_MIN_W = 60.0
 NODE_MIN_H = 40.0

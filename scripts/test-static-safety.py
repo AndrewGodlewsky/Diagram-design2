@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "skills/diagram-design/scripts"))
+sys.path.insert(0, str(ROOT / "skills/diagram-design-local/scripts"))
 import export_svg
 import self_check
 import static_safety
@@ -30,7 +30,7 @@ def page(extra: str) -> str:
 
 class StaticSafetyTests(unittest.TestCase):
     def test_foreign_style_and_cdata_cannot_hide_active_markup(self):
-        template = (ROOT / 'skills/diagram-design/assets/template.html').read_text(encoding='utf-8')
+        template = (ROOT / 'skills/diagram-design-local/assets/template.html').read_text(encoding='utf-8')
         active = '<img src="https://example.test/a.png" onerror="alert(1)">'
         cases = [
             template.replace('</svg>', '<style>' + active + '</style></svg>', 1),

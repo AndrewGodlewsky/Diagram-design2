@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One-shot environment diagnostics verifier for Diagram Design.
+"""One-shot environment diagnostics verifier for Diagram Design Local.
 
 Runs read-only checks for local readiness and exits non-zero only on hard failures
 (or warnings when --strict is supplied).
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL_RELATIVE = Path("skills/diagram-design/SKILL.md")
+SKILL_RELATIVE = Path("skills/diagram-design-local/SKILL.md")
 
 MAINTAINER_MARKERS = (
     Path("CONTRIBUTING.md"),
@@ -37,11 +37,11 @@ ROUTING_SURFACES = {
     Path("commands/import-excalidraw.md"): "references/import-excalidraw.md",
     Path("commands/profile.md"): "references/profiles.md",
     Path("commands/doctor.md"): "references/doctor.md",
-    Path("prompts/export-diagram.md"): "references/export.md",
-    Path("prompts/import-mermaid.md"): "references/import-mermaid.md",
-    Path("prompts/import-excalidraw.md"): "references/import-excalidraw.md",
-    Path("prompts/profile.md"): "references/profiles.md",
-    Path("prompts/doctor.md"): "references/doctor.md",
+    Path("prompts/diagram-design-local-export-diagram.md"): "references/export.md",
+    Path("prompts/diagram-design-local-import-mermaid.md"): "references/import-mermaid.md",
+    Path("prompts/diagram-design-local-import-excalidraw.md"): "references/import-excalidraw.md",
+    Path("prompts/diagram-design-local-profile.md"): "references/profiles.md",
+    Path("prompts/diagram-design-local-doctor.md"): "references/doctor.md",
 }
 
 
@@ -132,9 +132,9 @@ def check_common_path_mistakes(root: Path, cwd: Path) -> CheckResult:
 
     if resolve_skill_file(root) is None:
         warnings.append(
-            "Diagram Design SKILL.md was not found under the resolved installation root."
+            "Diagram Design Local SKILL.md was not found under the resolved installation root."
         )
-        fixes.append("Reinstall or update Diagram Design, then run the doctor again.")
+        fixes.append("Reinstall or update Diagram Design Local, then run the doctor again.")
 
     if platform.system().lower().startswith("win") and " " in str(cwd):
         warnings.append(
@@ -245,7 +245,7 @@ def run_doctor(root: Path, cwd: Path, strict: bool, emit_json: bool) -> int:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run one-shot Diagram Design environment diagnostics."
+        description="Run one-shot Diagram Design Local environment diagnostics."
     )
     parser.add_argument(
         "--strict",

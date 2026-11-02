@@ -202,9 +202,9 @@ def type_ramp_fixture():
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-ramp-") as temp_dir:
         root = Path(temp_dir)
         for relative in TYPE_RAMP_FILES:
-            target = root / "skills/diagram-design" / relative
+            target = root / "skills/diagram-design-local" / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes((ROOT / "skills/diagram-design" / relative).read_bytes())
+            target.write_bytes((ROOT / "skills/diagram-design-local" / relative).read_bytes())
         yield root
 
 
@@ -216,7 +216,7 @@ def check_split_type_ramp(verify) -> None:
         raise AssertionError(f"shipped type-ramp surfaces disagree with output-spec.md: {errors}")
 
     with type_ramp_fixture() as root:
-        package = root / "skills/diagram-design"
+        package = root / "skills/diagram-design-local"
         grid = package / "references/layout-budget.md"
         primitives = package / "references/primitives-core.md"
         skill = package / "SKILL.md"
@@ -443,13 +443,13 @@ def check_heading_syntax(verify) -> None:
 # surface puts between presets: a surface dropped from the verifier's own list
 # must fail a test, not shrink it.
 SIZE_SURFACES = {
-    "skills/diagram-design/SKILL.md": " · ",
+    "skills/diagram-design-local/SKILL.md": " · ",
     "README.md": " · ",
     "commands/import-drawio.md": ", ",
     "commands/import-mermaid.md": ", ",
     "commands/import-excalidraw.md": ", ",
 }
-OUTPUT_SPEC = "skills/diagram-design/references/output-spec.md"
+OUTPUT_SPEC = "skills/diagram-design-local/references/output-spec.md"
 LETTER_ROW = "| `print-letter-landscape` | `0 0 1056 816` |"
 A2_ROW = "| `print-a2-landscape` | `0 0 2244 1584` | ~1.41:1 | @3 | print | A2 |\n"
 
@@ -505,10 +505,10 @@ def check_size_preset_surfaces(verify) -> None:
             raise AssertionError(f"reordered presets were not reported: {errors}")
         readme.write_bytes(original)
 
-        skill = root / "skills/diagram-design/SKILL.md"
+        skill = root / "skills/diagram-design-local/SKILL.md"
         original = mutate(skill, "| **Size** |", "| **Canvas** |")
         errors = run_checks(root, verify.check_size_preset_surfaces)
-        expected = ["skills/diagram-design/SKILL.md has no size-preset list"]
+        expected = ["skills/diagram-design-local/SKILL.md has no size-preset list"]
         if errors != expected:
             raise AssertionError(f"a lost size-preset list was not reported: {errors}")
         skill.write_bytes(original)
@@ -646,7 +646,7 @@ def main() -> int:
                 raise AssertionError(f"oversized description was not rejected: {errors}")
 
     line_dark = (
-        ROOT / "skills/diagram-design/assets/example-line-dark.html"
+        ROOT / "skills/diagram-design-local/assets/example-line-dark.html"
     ).read_text(encoding="utf-8")
     errors = []
     verify.check_line_dark_skin(errors, line_dark)
@@ -667,11 +667,11 @@ def main() -> int:
 
     # ── Loop station origin (#443) ───────────────────────────────────────────
     loop_reference = (
-        ROOT / "skills/diagram-design/references/type-loop.md"
+        ROOT / "skills/diagram-design-local/references/type-loop.md"
     ).read_text(encoding="utf-8")
     loop_examples = {
         path.name: path.read_text(encoding="utf-8")
-        for path in sorted((ROOT / "skills/diagram-design/assets").glob("example-loop*.html"))
+        for path in sorted((ROOT / "skills/diagram-design-local/assets").glob("example-loop*.html"))
     }
     errors = []
     verify.check_loop_station_origin(errors, loop_reference, loop_examples)
@@ -877,8 +877,8 @@ def main() -> int:
     )
     with tempfile.TemporaryDirectory(prefix="legacy-type-sizes-") as temp_dir:
         fake_root = Path(temp_dir)
-        assets = fake_root / "skills/diagram-design/assets"
-        references = fake_root / "skills/diagram-design/references"
+        assets = fake_root / "skills/diagram-design-local/assets"
+        references = fake_root / "skills/diagram-design-local/references"
         assets.mkdir(parents=True)
         references.mkdir(parents=True)
         legacy = assets / "example-legacy.html"
@@ -1146,13 +1146,13 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
             raise AssertionError(f"omitted runtime helper was not reported: {errors}")
 
         root = Path(temp_dir) / "repo"
-        profile_reference = root / "skills/diagram-design/references/profiles.md"
-        doctor_reference = root / "skills/diagram-design/references/doctor.md"
-        export_reference = root / "skills/diagram-design/references/export.md"
-        drawio_reference = root / "skills/diagram-design/references/import-drawio.md"
-        mermaid_reference = root / "skills/diagram-design/references/import-mermaid.md"
+        profile_reference = root / "skills/diagram-design-local/references/profiles.md"
+        doctor_reference = root / "skills/diagram-design-local/references/doctor.md"
+        export_reference = root / "skills/diagram-design-local/references/export.md"
+        drawio_reference = root / "skills/diagram-design-local/references/import-drawio.md"
+        mermaid_reference = root / "skills/diagram-design-local/references/import-mermaid.md"
         excalidraw_reference = (
-            root / "skills/diagram-design/references/import-excalidraw.md"
+            root / "skills/diagram-design-local/references/import-excalidraw.md"
         )
         export_command = root / "commands/export-diagram.md"
         drawio_command = root / "commands/import-drawio.md"
@@ -1160,11 +1160,11 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         excalidraw_command = root / "commands/import-excalidraw.md"
         profile_command = root / "commands/profile.md"
         doctor_command = root / "commands/doctor.md"
-        export_prompt = root / "prompts/export-diagram.md"
-        mermaid_prompt = root / "prompts/import-mermaid.md"
-        excalidraw_prompt = root / "prompts/import-excalidraw.md"
-        profile_prompt = root / "prompts/profile.md"
-        doctor_prompt = root / "prompts/doctor.md"
+        export_prompt = root / "prompts/diagram-design-local-export-diagram.md"
+        mermaid_prompt = root / "prompts/diagram-design-local-import-mermaid.md"
+        excalidraw_prompt = root / "prompts/diagram-design-local-import-excalidraw.md"
+        profile_prompt = root / "prompts/diagram-design-local-profile.md"
+        doctor_prompt = root / "prompts/diagram-design-local-doctor.md"
         for path in (
             profile_reference,
             doctor_reference,
@@ -1215,7 +1215,7 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         doctor_prompt.unlink()
         errors = []
         verify.check_routing_surfaces(errors, root)
-        expected = "routing surface is missing: prompts/doctor.md"
+        expected = "routing surface is missing: prompts/diagram-design-local-doctor.md"
         if errors != [expected]:
             raise AssertionError(f"missing routing prompt was not reported: {errors}")
 
@@ -1223,7 +1223,7 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         errors = []
         verify.check_routing_surfaces(errors, root)
         expected = (
-            "routing surface does not route to references/doctor.md: prompts/doctor.md"
+            "routing surface does not route to references/doctor.md: prompts/diagram-design-local-doctor.md"
         )
         if errors != [expected]:
             raise AssertionError(f"stale routing prompt was not reported: {errors}")
@@ -1234,25 +1234,25 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         factory_manifest.write_text(
             json.dumps(
                 {
-                    "name": "diagram-design",
-                    "repository": "https://github.com/example/diagram-design",
+                    "name": "diagram-design-local",
+                    "repository": "https://github.com/example/diagram-design-local",
                 }
             ),
             encoding="utf-8",
         )
         factory_marketplace.write_text(
-            json.dumps({"name": "diagram-design"}),
+            json.dumps({"name": "diagram-design-local"}),
             encoding="utf-8",
         )
-        valid_readme = """# Diagram Design
+        valid_readme = """# Diagram Design Local
 
 ```bash
-droid plugin marketplace add https://github.com/example/diagram-design
-droid plugin install diagram-design@diagram-design --scope user
+droid plugin marketplace add https://github.com/example/diagram-design-local
+droid plugin install diagram-design-local@diagram-design-local --scope user
 ```
 
 ```
-diagram-design/
+diagram-design-local/
 ├── .factory-plugin/ — Factory Droid metadata
 ├── commands/
 └── skills/
@@ -1268,10 +1268,10 @@ diagram-design/
 
         readme.write_text(
             valid_readme.replace(
-                "droid plugin marketplace add https://github.com/example/diagram-design\n"
-                "droid plugin install diagram-design@diagram-design --scope user",
-                "droid plugin install diagram-design@diagram-design --scope user\n"
-                "droid plugin marketplace add https://github.com/example/diagram-design",
+                "droid plugin marketplace add https://github.com/example/diagram-design-local\n"
+                "droid plugin install diagram-design-local@diagram-design-local --scope user",
+                "droid plugin install diagram-design-local@diagram-design-local --scope user\n"
+                "droid plugin marketplace add https://github.com/example/diagram-design-local",
             ),
             encoding="utf-8",
         )
@@ -1279,8 +1279,8 @@ diagram-design/
         verify.check_factory_install_surface(errors, root)
         expected = (
             "README Factory install block must match native metadata: "
-            "`droid plugin marketplace add https://github.com/example/diagram-design` "
-            "then `droid plugin install diagram-design@diagram-design`"
+            "`droid plugin marketplace add https://github.com/example/diagram-design-local` "
+            "then `droid plugin install diagram-design-local@diagram-design-local`"
         )
         if errors != [expected]:
             raise AssertionError(
@@ -1289,7 +1289,7 @@ diagram-design/
 
         readme.write_text(
             valid_readme.replace(
-                "diagram-design@diagram-design", "diagram-design@wrong-marketplace"
+                "diagram-design-local@diagram-design-local", "diagram-design-local@wrong-marketplace"
             ),
             encoding="utf-8",
         )
@@ -1297,8 +1297,8 @@ diagram-design/
         verify.check_factory_install_surface(errors, root)
         expected = (
             "README Factory install block must match native metadata: "
-            "`droid plugin marketplace add https://github.com/example/diagram-design` "
-            "then `droid plugin install diagram-design@diagram-design`"
+            "`droid plugin marketplace add https://github.com/example/diagram-design-local` "
+            "then `droid plugin install diagram-design-local@diagram-design-local`"
         )
         if errors != [expected]:
             raise AssertionError(
@@ -1378,7 +1378,7 @@ diagram-design/
         # it. It points at SKILL.md §3 instead, and the two phrasings the real
         # file used are covered so the wording cannot come back.
         readme_routed = (
-            "# Diagram Design\n\n"
+            "# Diagram Design Local\n\n"
             "Every visual type ships in three static variants; see `SKILL.md` §3.\n"
         )
         readme.write_text(readme_routed, encoding="utf-8")
@@ -1389,7 +1389,7 @@ diagram-design/
 
         # README may state the count only when it equals the shipped number of
         # type references, so the number a reader sees cannot go stale.
-        references = root / "skills/diagram-design/references"
+        references = root / "skills/diagram-design-local/references"
         references.mkdir(parents=True, exist_ok=True)
         for index in range(3):
             (references / f"type-shipped-{index}.md").write_text("# t\n", encoding="utf-8")
@@ -1422,7 +1422,7 @@ diagram-design/
             if len(errors) != 1 or relative.as_posix() not in errors[0]:
                 raise AssertionError(f"a stale count in {relative} was not reported: {errors}")
             surface.write_text("See the shipped visual types.\n", encoding="utf-8")
-        skill_surface = root / "skills/diagram-design/SKILL.md"
+        skill_surface = root / "skills/diagram-design-local/SKILL.md"
         skill_surface.write_text("See §3 visual-type guide.\n", encoding="utf-8")
         errors = []
         verify.check_type_counts(errors, root)

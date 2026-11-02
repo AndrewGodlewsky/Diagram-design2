@@ -22,14 +22,14 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL = ROOT / "skills/diagram-design/SKILL.md"
-EXTRACT = ROOT / "skills/diagram-design/scripts/excalidraw_extract.py"
-IMPORT_REF = ROOT / "skills/diagram-design/references/import-excalidraw.md"
+SKILL = ROOT / "skills/diagram-design-local/SKILL.md"
+EXTRACT = ROOT / "skills/diagram-design-local/scripts/excalidraw_extract.py"
+IMPORT_REF = ROOT / "skills/diagram-design-local/references/import-excalidraw.md"
 COMMAND = ROOT / "commands/import-excalidraw.md"
-PROMPT = ROOT / "prompts/import-excalidraw.md"
+PROMPT = ROOT / "prompts/diagram-design-local-import-excalidraw.md"
 WHITEBOARD = ROOT / "scripts/fixtures/sample-whiteboard.excalidraw"
 ADVERSARIAL = ROOT / "scripts/fixtures/sample-adversarial.excalidraw"
-EXAMPLE = ROOT / "skills/diagram-design/assets/example-import-excalidraw.html"
+EXAMPLE = ROOT / "skills/diagram-design-local/assets/example-import-excalidraw.html"
 
 
 def fail(message: str) -> None:
@@ -650,9 +650,9 @@ def check_legacy_stdout_encoding(tmp: Path) -> None:
 
 def check_docs_and_wiring() -> None:
     import_text = IMPORT_REF.read_text(encoding="utf-8")
-    expected_slash_command = f"/diagram-design:{COMMAND.stem}"
+    expected_slash_command = f"/diagram-design-local:{COMMAND.stem}"
     documented_slash_commands = set(
-        re.findall(r"`(/diagram-design:[a-z0-9-]+)`", import_text)
+        re.findall(r"`(/diagram-design-local:[a-z0-9-]+)`", import_text)
     )
     if documented_slash_commands != {expected_slash_command}:
         rendered = ", ".join(sorted(documented_slash_commands)) or "none"
@@ -780,7 +780,7 @@ def check_unimported_container_text(tmp: Path) -> None:
 
 
 def main() -> int:
-    with tempfile.TemporaryDirectory(prefix="diagram-design-excalidraw-") as directory:
+    with tempfile.TemporaryDirectory(prefix="diagram-design-local-excalidraw-") as directory:
         tmp = Path(directory)
         check_files()
         check_json_nesting_diagnostic(tmp)

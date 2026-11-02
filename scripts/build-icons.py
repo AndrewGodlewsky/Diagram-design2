@@ -1,11 +1,11 @@
-"""Normalize the vendored local icon set for the diagram-design skill.
+"""Normalize the vendored local icon set for the diagram-design-local skill.
 
 Reads vendored SVGs attributed to Tabler Icons (MIT), Simple Icons (CC0),
 log-z/logos (MIT), and Devicon (MIT), normalizes them to a 24x24 viewBox using `currentColor`
 so they inherit ink from context, and emits two artifacts:
 
-  - skills/diagram-design/references/primitive-icons.md  (catalog with snippets)
-  - skills/diagram-design/assets/icons.html               (visual gallery)
+  - skills/diagram-design-local/references/primitive-icons.md  (catalog with snippets)
+  - skills/diagram-design-local/assets/icons.html               (visual gallery)
 
 Run:    python scripts/build-icons.py
 Check:  python scripts/build-icons.py --check
@@ -23,8 +23,8 @@ import sys
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
-MD_OUT = REPO / "skills" / "diagram-design" / "references" / "primitive-icons.md"
-HTML_OUT = REPO / "skills" / "diagram-design" / "assets" / "icons.html"
+MD_OUT = REPO / "skills" / "diagram-design-local" / "references" / "primitive-icons.md"
+HTML_OUT = REPO / "skills" / "diagram-design-local" / "assets" / "icons.html"
 VENDOR_DIR = REPO / "scripts" / "vendor" / "icons"
 
 
@@ -416,7 +416,7 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Icon library · Diagram Design</title>
+  <title>Icon library · Diagram Design Local</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -518,7 +518,7 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
 <body>
   <div class="container">
     <div class="header">
-      <p class="eyebrow">Icons · Diagram Design</p>
+      <p class="eyebrow">Icons · Diagram Design Local</p>
       <h1>Icon library</h1>
       <p class="subtitle">A small, monochrome library for IT/cloud illustrations. Stroked icons from Tabler Icons (MIT); brand silhouettes from Simple Icons (CC0). Every icon uses <code>currentColor</code> so it inherits ink from its parent.</p>
     </div>

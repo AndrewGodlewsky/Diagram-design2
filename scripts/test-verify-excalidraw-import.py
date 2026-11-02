@@ -12,8 +12,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-REFERENCE = Path("skills/diagram-design/references/import-excalidraw.md")
-EXAMPLE = Path("skills/diagram-design/assets/example-import-excalidraw.html")
+REFERENCE = Path("skills/diagram-design-local/references/import-excalidraw.md")
+EXAMPLE = Path("skills/diagram-design-local/assets/example-import-excalidraw.html")
 FIXTURE = Path("scripts/fixtures/sample-adversarial.excalidraw")
 VERIFIER = Path("scripts/verify-excalidraw-import.py")
 
@@ -30,7 +30,7 @@ def run_verifier(root: Path) -> subprocess.CompletedProcess[str]:
 
 
 def main() -> int:
-    with tempfile.TemporaryDirectory(prefix="diagram-design-excalidraw-test-") as tmp_dir:
+    with tempfile.TemporaryDirectory(prefix="diagram-design-local-excalidraw-test-") as tmp_dir:
         clone = Path(tmp_dir) / "repo"
         shutil.copytree(
             ROOT,
@@ -45,8 +45,8 @@ def main() -> int:
             )
 
         reference = clone / REFERENCE
-        stale_name = "/diagram-design:import"
-        valid_name = "/diagram-design:import-excalidraw"
+        stale_name = "/diagram-design-local:import"
+        valid_name = "/diagram-design-local:import-excalidraw"
         text = reference.read_text(encoding="utf-8")
         if valid_name not in text:
             raise AssertionError("test fixture lacks the valid slash name")

@@ -22,7 +22,7 @@ VERSION_HISTORY_SCRIPT = ROOT / "scripts/plugin_version_history.py"
 AUTO_BUMP_WORKFLOW = ROOT / ".github/workflows/auto-bump.yml"
 CI_WORKFLOW = ROOT / ".github/workflows/ci.yml"
 VERSION_GATE_STEP = "Forbid manifest version changes in pull requests"
-PLUGIN_NAME = "diagram-design"
+PLUGIN_NAME = "diagram-design-local"
 
 
 def load_module(name: str, path: Path) -> ModuleType:
@@ -376,7 +376,7 @@ def test_verifier() -> None:
         set_versions(root, "1.2.4", "1.2.4")
         alternate = root / "alternate-skills" / PLUGIN_NAME
         alternate.mkdir(parents=True)
-        (alternate / "SKILL.md").write_text("---\nname: diagram-design\n---\n")
+        (alternate / "SKILL.md").write_text("---\nname: diagram-design-local\n---\n")
         qoder_path = root / ".qoder-plugin/plugin.json"
         qoder = json.loads(qoder_path.read_text(encoding="utf-8"))
         qoder["skills"] = "./alternate-skills/"

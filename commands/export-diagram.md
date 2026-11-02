@@ -7,7 +7,7 @@ allowed-tools:
   - Bash
 ---
 
-Locate `diagram-design` from its advertised `SKILL.md` path. Read the skill and its `references/export.md`, then run packaged `scripts/export_svg.py`. Do not assume the current directory is the install. Export local HTML at `$1` to SVG; default destination is its basename with `.svg`. `--output` selects the destination base. `--svg-only` supports explicit composition with registry export.
+Locate `diagram-design-local` from its advertised `SKILL.md` path. Read the skill and its `references/export.md`, then run packaged `scripts/export_svg.py`. Do not assume the current directory is the install. Export local HTML at `$1` to SVG; default destination is its basename with `.svg`. `--output` selects the destination base. `--svg-only` supports explicit composition with registry export.
 
 Full argument string: `$ARGUMENTS`
 

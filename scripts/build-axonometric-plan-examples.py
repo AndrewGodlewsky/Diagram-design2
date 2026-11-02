@@ -21,11 +21,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagram-design-local/assets"
 from axonometry import (FONT_LINK, FULL, MINIMAL, SKINS, Proj, Rect,  # noqa: E402
                         cards_html, f, finish, outline, prism, solid, styles)
 
-EYEBROW = "Axonometric plan · Diagram Design"
+EYEBROW = "Axonometric plan · Diagram Design Local"
 TREE_TOP = {"light": "#bfc0c0", "dark": "#949eb2"}
 T = 6  # wall thickness
 

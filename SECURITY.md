@@ -35,4 +35,4 @@ Please avoid accessing, modifying, or deleting data that does not belong to
 you, disrupting services, or degrading other users' experience. If testing
 could affect other people or systems, stop and submit a private report first.
 
-Thank you for helping keep Diagram Design and its users safe.
+Thank you for helping keep Diagram Design Local and its users safe.

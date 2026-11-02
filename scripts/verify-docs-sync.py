@@ -60,16 +60,16 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL = ROOT / "skills/diagram-design/SKILL.md"
-GALLERY = ROOT / "skills/diagram-design/assets/index.html"
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+SKILL = ROOT / "skills/diagram-design-local/SKILL.md"
+GALLERY = ROOT / "skills/diagram-design-local/assets/index.html"
+ASSET_DIR = ROOT / "skills/diagram-design-local/assets"
 README = ROOT / "README.md"
-HIGH_LEVEL_REFERENCE = ROOT / "skills/diagram-design/references/type-high-level.md"
-ONBOARDING_REFERENCE = ROOT / "skills/diagram-design/references/onboarding.md"
-LINE_DARK_EXAMPLE = ROOT / "skills/diagram-design/assets/example-line-dark.html"
-LOOP_REFERENCE = ROOT / "skills/diagram-design/references/type-loop.md"
+HIGH_LEVEL_REFERENCE = ROOT / "skills/diagram-design-local/references/type-high-level.md"
+ONBOARDING_REFERENCE = ROOT / "skills/diagram-design-local/references/onboarding.md"
+LINE_DARK_EXAMPLE = ROOT / "skills/diagram-design-local/assets/example-line-dark.html"
+LOOP_REFERENCE = ROOT / "skills/diagram-design-local/references/type-loop.md"
 LOOP_EXAMPLE_GLOB = "example-loop*.html"
-OUTPUT_SPEC_REFERENCE = ROOT / "skills/diagram-design/references/output-spec.md"
+OUTPUT_SPEC_REFERENCE = ROOT / "skills/diagram-design-local/references/output-spec.md"
 VARIANTS = ("", "-dark", "-full")
 VISUAL_TYPE_COUNT = 45
 AGENT_SKILLS_DESCRIPTION_MAX = 1024
@@ -95,17 +95,17 @@ ROUTING_SURFACES = {
     Path("commands/import-excalidraw.md"): "references/import-excalidraw.md",
     Path("commands/profile.md"): "references/profiles.md",
     Path("commands/doctor.md"): "references/doctor.md",
-    Path("prompts/export-diagram.md"): "references/export.md",
-    Path("prompts/import-mermaid.md"): "references/import-mermaid.md",
-    Path("prompts/import-excalidraw.md"): "references/import-excalidraw.md",
-    Path("prompts/profile.md"): "references/profiles.md",
-    Path("prompts/doctor.md"): "references/doctor.md",
+    Path("prompts/diagram-design-local-export-diagram.md"): "references/export.md",
+    Path("prompts/diagram-design-local-import-mermaid.md"): "references/import-mermaid.md",
+    Path("prompts/diagram-design-local-import-excalidraw.md"): "references/import-excalidraw.md",
+    Path("prompts/diagram-design-local-profile.md"): "references/profiles.md",
+    Path("prompts/diagram-design-local-doctor.md"): "references/doctor.md",
 }
 # Surfaces that enumerate every size preset for selection, and the marker of
 # the line that carries the list. The output-spec.md size table is the source.
 SIZE_PRESET_TABLE_HEADING = "## 2. Size"
 SIZE_PRESET_SURFACES = {
-    Path("skills/diagram-design/SKILL.md"): "| **Size** |",
+    Path("skills/diagram-design-local/SKILL.md"): "| **Size** |",
     Path("README.md"): "| **Size** |",
     Path("commands/import-drawio.md"): "- `--size` — any preset in `output-spec.md` §2:",
     Path("commands/import-mermaid.md"): "- `--size` — any preset in `output-spec.md` §2:",
@@ -404,7 +404,7 @@ def check_gallery_type_parity(errors: list[str], gallery: Path, references: Path
 
 
 def readme_tree_tokens(markdown: str) -> list[str]:
-    blocks = re.findall(r"```\n(diagram-design/\n.*?)```", markdown, re.DOTALL)
+    blocks = re.findall(r"```\n(Diagram-design2/\n.*?)```", markdown, re.DOTALL)
     tokens: list[str] = []
     for block in blocks:
         tokens.extend(
@@ -550,9 +550,9 @@ def check_packaged_support_references(
 
 def check_routing_surfaces(errors: list[str], root: Path) -> None:
     for relative, reference_link in ROUTING_SURFACES.items():
-        reference = root / "skills/diagram-design" / reference_link
+        reference = root / "skills/diagram-design-local" / reference_link
         if not reference.is_file():
-            errors.append(f"routing source of truth is missing: skills/diagram-design/{reference_link}")
+            errors.append(f"routing source of truth is missing: skills/diagram-design-local/{reference_link}")
         path = root / relative
         if not path.is_file():
             errors.append(f"routing surface is missing: {relative.as_posix()}")
@@ -583,7 +583,7 @@ def surface_size_presets(markdown: str, marker: str) -> list[str] | None:
 
 
 def check_size_preset_surfaces(errors: list[str], root: Path) -> None:
-    spec = root / "skills/diagram-design/references/output-spec.md"
+    spec = root / "skills/diagram-design-local/references/output-spec.md"
     presets = spec_size_presets(spec.read_text(encoding="utf-8"))
     if not presets:
         errors.append("output-spec.md size table names no presets")
@@ -643,7 +643,7 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
     architecture_blocks = [
         block
         for block in code_blocks
-        if "diagram-design/" in block and "commands/" in block
+        if "diagram-design-local/" in block and "commands/" in block
     ]
     native_path_is_documented = any(
         line.lstrip(" │├─└").startswith(native_directory)
@@ -696,16 +696,16 @@ COUNT_SURFACES = (
     Path("commands/import-excalidraw.md"),
     Path("README.md"),
     Path("CONTRIBUTING.md"),
-    Path("skills/diagram-design/SKILL.md"),
-    Path("skills/diagram-design/references/onboarding.md"),
-    Path("skills/diagram-design/references/semantic-patterns.md"),
+    Path("skills/diagram-design-local/SKILL.md"),
+    Path("skills/diagram-design-local/references/onboarding.md"),
+    Path("skills/diagram-design-local/references/semantic-patterns.md"),
 )
 
 
 # Reader-facing docs may state the count, but it must match the shipped type
 # references. Import commands stay count-free and route to SKILL.md instead.
 VERIFIED_COUNT_SURFACES = frozenset(COUNT_SURFACES[3:])
-TYPE_REFERENCE_GLOB = "skills/diagram-design/references/type-*.md"
+TYPE_REFERENCE_GLOB = "skills/diagram-design-local/references/type-*.md"
 
 
 def shipped_type_count(root: Path) -> int:
@@ -808,8 +808,8 @@ TYPE_SIZE_SUFFIXES = (".html", ".svg", ".md")
 # Where diagram type lives. The gallery pages (index.html, icons.html) are site
 # chrome, not diagrams, so the type ramp does not govern them.
 TYPE_SIZE_SURFACES = (
-    ("skills/diagram-design/assets", ("example-", "template")),
-    ("skills/diagram-design/references", ("type-",)),
+    ("skills/diagram-design-local/assets", ("example-", "template")),
+    ("skills/diagram-design-local/references", ("type-",)),
 )
 
 
@@ -1516,7 +1516,7 @@ def check_manifest_descriptions(errors: list[str], root: Path) -> None:
                     )
 
 
-SKILL_PACKAGE = Path("skills/diagram-design")
+SKILL_PACKAGE = Path("skills/diagram-design-local")
 def main() -> int:
     errors: list[str] = []
     check_description(errors)

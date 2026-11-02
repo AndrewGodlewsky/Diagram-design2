@@ -21,15 +21,15 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL = ROOT / "skills/diagram-design/SKILL.md"
-EXTRACT = ROOT / "skills/diagram-design/scripts/mermaid_extract.py"
-IMPORT_REF = ROOT / "skills/diagram-design/references/import-mermaid.md"
+SKILL = ROOT / "skills/diagram-design-local/SKILL.md"
+EXTRACT = ROOT / "skills/diagram-design-local/scripts/mermaid_extract.py"
+IMPORT_REF = ROOT / "skills/diagram-design-local/references/import-mermaid.md"
 COMMAND = ROOT / "commands/import-mermaid.md"
-PROMPT = ROOT / "prompts/import-mermaid.md"
+PROMPT = ROOT / "prompts/diagram-design-local-import-mermaid.md"
 FLOW = ROOT / "scripts/fixtures/sample-flowchart.mmd"
 README_FIXTURE = ROOT / "scripts/fixtures/sample-readme-with-mermaid.md"
 ADVERSARIAL = ROOT / "scripts/fixtures/sample-adversarial.mmd"
-EXAMPLE = ROOT / "skills/diagram-design/assets/example-import-mermaid.html"
+EXAMPLE = ROOT / "skills/diagram-design-local/assets/example-import-mermaid.html"
 
 
 def fail(message: str) -> None:
@@ -1558,7 +1558,7 @@ def check_standalone_state_regression(tmp: Path) -> None:
 
 
 def main() -> int:
-    with tempfile.TemporaryDirectory(prefix="diagram-design-mermaid-") as directory:
+    with tempfile.TemporaryDirectory(prefix="diagram-design-local-mermaid-") as directory:
         tmp = Path(directory)
         check_unicode_state_regression(tmp)
         check_unicode_er_regression(tmp)

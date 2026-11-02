@@ -33,7 +33,7 @@ checker holds the drawing to those declarations:
 
 Usage:
     python3 scripts/verify-service-blueprint.py --all
-    python3 scripts/verify-service-blueprint.py skills/diagram-design/assets/example-service-blueprint.html
+    python3 scripts/verify-service-blueprint.py skills/diagram-design-local/assets/example-service-blueprint.html
 
 Exit: 0 clean, 1 findings, 2 usage.
 """
@@ -47,7 +47,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+ASSET_DIR = ROOT / "skills/diagram-design-local/assets"
 
 RECT_RE = re.compile(r"<rect\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
 LINE_RE = re.compile(r"<line\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regression tests for standalone SVG export (CSS carry + defs ID namespace).
 
-Covers the packaged helper at skills/diagram-design/scripts/export_svg.py and
+Covers the packaged helper at skills/diagram-design-local/scripts/export_svg.py and
 the contract documented in references/export.md (issues #202 and #203).
 """
 
@@ -19,10 +19,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "skills/diagram-design/scripts"))
-HELPER = ROOT / "skills/diagram-design/scripts/export_svg.py"
-EXPORT_MD = ROOT / "skills/diagram-design/references/export.md"
-ASSETS = ROOT / "skills/diagram-design/assets"
+sys.path.insert(0, str(ROOT / "skills/diagram-design-local/scripts"))
+HELPER = ROOT / "skills/diagram-design-local/scripts/export_svg.py"
+EXPORT_MD = ROOT / "skills/diagram-design-local/references/export.md"
+ASSETS = ROOT / "skills/diagram-design-local/assets"
 
 # Shipped assets the helper refuses (loudly). Empty since #407: nested icon
 # <svg> elements and `--` inside comments both export. Keep this list exact so
