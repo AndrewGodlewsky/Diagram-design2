@@ -2,11 +2,174 @@
 
 Create branded diagrams as **static, self-contained HTML and SVG**, using local files, installed fonts, and Python's standard library.
 
+## How it works
+
+**You describe a diagram. Your AI agent reads the skill, designs the layout, and writes HTML/SVG. Local Python tools parse existing diagrams, check the result, and export SVG.** There is no bundled model, running service, database, or automatic layout engine.
+
+The diagram below shows the current implementation. Arrows name data or control handoffs; dashed arrows are optional paths. “Workspace” means wherever your host runs its file and Python tools, which may be your computer or a hosted workspace.
+
+```mermaid
+flowchart TB
+    USER["You<br/>Describe a system, process, or dataset"]
+    AGENT["Your AI agent<br/>Chooses type, size, detail, and layout<br/>Writes and revises the diagram"]
+    GUIDE["Installed Diagram Design Local<br/>SKILL.md + Markdown references<br/>45 types, templates, and SVG primitives"]
+    MODEL["Host-selected AI model<br/>May run locally or at a remote provider"]
+
+    subgraph WORKSPACE["Workspace: local files and Python 3.10+ standard-library tools"]
+        BRAND["Optional brand input<br/>Supplied CSS/tokens, style guide,<br/>or selected local profile"]
+        SOURCE["Optional existing diagram<br/>draw.io, Mermaid, or Excalidraw"]
+        PARSE["Import parsers<br/>Decode data without rendering<br/>Return a digest or JSON representation"]
+        DRAFT["Agent-authored draft<br/>One HTML file with inline CSS and SVG"]
+        CHECK["self_check.py + static_safety.py<br/>Document, accessibility, bounds,<br/>and static/local-content checks"]
+        HTML["Accepted HTML deliverable<br/>Complete page, including editorial text"]
+        EXPORT["export_svg.py + static_safety.py<br/>Extract SVG, carry CSS, namespace IDs,<br/>validate XML and safety before writing"]
+        SVG["Optional standalone SVG<br/>Vector diagram, with local font fallbacks"]
+    end
+
+    USER -->|requests| AGENT
+    GUIDE -->|supplies instructions and reusable markup| AGENT
+    MODEL -->|provides reasoning through the host| AGENT
+    BRAND -->|supplies literal style values| AGENT
+    SOURCE -->|when an import is requested| PARSE
+    AGENT -->|invokes the matching parser| PARSE
+    PARSE -->|returns structure or a diagnostic| AGENT
+    AGENT -->|composes| DRAFT
+    DRAFT -->|agent invokes the checker| CHECK
+    CHECK -->|pass: agent delivers| HTML
+    CHECK -->|fail: agent fixes or reports| AGENT
+    HTML -.->|only when SVG is requested| EXPORT
+    EXPORT -->|valid output| SVG
+    EXPORT -->|refusal: no new SVG written| AGENT
+```
+
+**What makes it local:** the shipped Python tools do not call a model API, fetch websites, download fonts, or launch a browser. Model inference and tool permissions belong to the host. HTML/SVG can be opened manually in a viewer; installed fonts or generic serif/sans/monospace fallbacks supply typography. A successful structural check is not a pixel-level rendering guarantee.
+
+<details>
+<summary><b>Inside the skill: instructions, parsing, safety, and export</b></summary>
+
+The agent orchestrates these components; there is no hidden runner chaining them together. A prose request goes straight to design. Importing first extracts content, then the agent redraws it using the same design rules.
+
+```mermaid
+flowchart TB
+    ENTRY["SKILL.md entry point<br/>Semantic pattern first, then visual type"]
+    REFERENCES["References loaded as needed<br/>Type/layout rules, style-guide.md,<br/>output-spec.md, and workflow procedures"]
+    ASSETS["Local authoring assets<br/>Light, dark, full, and terminal templates<br/>Static examples and inline SVG icon markup"]
+    PLAN["Agent design decisions<br/>Choose content and labels, set coordinates,<br/>apply tokens, and report import omissions"]
+    ENTRY -->|routes to| REFERENCES
+    REFERENCES -->|constrains| PLAN
+    ASSETS -->|provides starting markup| PLAN
+
+    subgraph IMPORT["Three independent import entry points"]
+        DRAWIO["drawio_extract.py<br/>XML / embedded PNG or SVG metadata<br/>base64 + bounded zlib decoding"]
+        MERMAID["mermaid_extract.py<br/>Parses supported text grammars<br/>No Mermaid renderer or JavaScript"]
+        EXCALIDRAW["excalidraw_extract.py<br/>Parses scene JSON<br/>Drops links, embeds, and binary payloads"]
+        IR["Intermediate representation<br/>Nodes, edges, containers, hubs,<br/>structural signals and budget flags"]
+        DRAWIO -->|extracts| IR
+        MERMAID -->|extracts| IR
+        EXCALIDRAW -->|extracts| IR
+    end
+    IR -->|Markdown digest by default, JSON on request| PLAN
+    PLAN -->|writes| DOCUMENT["HTML + inline CSS/SVG"]
+
+    subgraph VALIDATE["Shared boundary, separate checking and export paths"]
+        SELF["self_check.py<br/>Completeness, SVG title/description IDs,<br/>ARIA naming and supported viewBox bounds"]
+        SAFETY["static_safety.py<br/>Bounded UTF-8 reads, HTML/XML inspection,<br/>CSS token and escape checks"]
+        EXTRACT["export_svg.py<br/>Extract first SVG, normalize XML syntax,<br/>scope CSS, prefix definition IDs,<br/>and normalize supported color syntax"]
+        XML["ElementTree validation<br/>Well-formed XML and final safety check"]
+        RESULT["Write standalone .svg<br/>Only after export validation succeeds"]
+        SELF -->|uses| SAFETY
+        EXTRACT -->|checks source through| SAFETY
+        EXTRACT -->|validates transformed document| XML
+        XML -->|uses| SAFETY
+        XML -->|pass| RESULT
+    end
+    DOCUMENT -->|check before delivering HTML| SELF
+    DOCUMENT -->|export only when requested| EXTRACT
+```
+
+A failed self-check reports errors for the agent to correct or explain. A failed export refuses the conversion without writing its output. The exporter does **not** silently sanitize an arbitrary webpage, and it does not call the full self-check: the agent runs that separately. Export takes the diagram's first SVG; page headings and summary cards stay in the HTML.
+
+| Component | Concrete technology and responsibility |
+|---|---|
+| Agent and host | An Agent Skills-compatible host, such as Codex, Claude Code, or Copilot. The host supplies model inference, file access, command execution, and permission controls; none is implemented by this repository. |
+| Discovery and routing | [`SKILL.md`](skills/diagram-design-local/SKILL.md) uses YAML frontmatter plus Markdown instructions. Semantic/type references, [`output-spec.md`](skills/diagram-design-local/references/output-spec.md), and the style guide are read on demand, not executed as configuration code. |
+| Command surfaces | [`commands/`](commands/) provides plugin wrappers; [`prompts/`](prompts/) provides namespaced Pi prompts. They tell the agent which reference and helper to use. A skill-only install works through natural-language requests. |
+| Python runtime | Python 3.10+, standard library only. `argparse`, `pathlib`, and `sys` implement the CLIs and file handling; `dataclasses`, `typing`, `collections`, and `math` support structured data and calculations. No pip environment is required. |
+| Parsing and validation | `html` / `html.parser`, `re`, and `xml.etree.ElementTree` inspect HTML, CSS, and XML. `json` handles structured import data. draw.io additionally uses `base64`, `zlib`, `struct`, and `urllib.parse` for container decoding; `urllib.parse` does not make network requests. |
+| Import semantics | Parsers return content and structural evidence; the agent decides how to redraw it. Source layout, styling, and executable/link behavior do not become rendering instructions. A fidelity ledger reports merged, collapsed, or dropped content. |
+| Local branding | [`onboarding.md`](skills/diagram-design-local/references/onboarding.md) governs supplied files/tokens. [`profiles.md`](skills/diagram-design-local/references/profiles.md) defines Markdown profiles in `~/.diagram-design-local/profiles/` and a project `.diagram-design-local` marker containing `profile: <slug>`. Profile operations are agent procedures, not a background service or database. |
+| Outputs and typography | HTML with inline CSS and SVG; optional standalone SVG/XML. Four template families use local font stacks. Instrument Serif, Geist, and Geist Mono are optional installed fonts; generic fallbacks always remain. No font binaries are shipped. |
+| Optional metadata export | [`export-registry.md`](skills/diagram-design-local/references/export-registry.md) tells the agent how to project existing `data-block-*` attributes into `.registry.json` when explicitly requested. It is a separate procedure, not a flag implemented by `export_svg.py`. |
+| Readiness diagnostics | [`doctor.md`](skills/diagram-design-local/references/doctor.md) tells the agent to check Python, helper availability, reference paths, and a static sample. It installs nothing and is not a security audit of the host. |
+| Static assets and licenses | Templates, 203 static examples, and vendored SVG icons. Icon sources include Tabler, Simple Icons, Devicon, log-z/logos, and individual licensed sources; see [third-party licenses](THIRD_PARTY_LICENSES.md). These are local assets, not service integrations. |
+
+**Input limits and trust boundaries**
+
+| Entry point | Enforced limits and behavior |
+|---|---|
+| draw.io | 32 MiB source; 64 MiB decoded XML; 100 pages; 10,000 cells per page. Parses `.drawio`/XML and embedded diagram metadata in PNG/SVG; does not render the image. |
+| Mermaid | 4 MiB source; 2,000 nodes; 5,000 edges; 4,096 characters per statement. Supported subsets: flowchart/graph, sequence, state, and ER diagrams. Unsupported syntax is reported rather than executed. |
+| Excalidraw | 16 MiB source; 10,000 scene elements; 2,000 nodes; 5,000 edges. Accepts scene JSON, not rendered PNG/SVG exports. |
+| HTML self-check and SVG export | 16 MiB UTF-8 input. Rejects scripts, event attributes, frames/embedded active content, animation, CSS imports, and non-fragment resource references. SVG export also validates its serialized XML before writing. |
+| Agent context | Imported labels, local files, and profiles are untrusted data. The instructions prohibit following embedded commands; the host's own permissions remain the actual tool-access boundary. |
+
+Source of truth: the six files in [`skills/diagram-design-local/scripts/`](skills/diagram-design-local/scripts/). Resource bounds limit accepted inputs; they do not make arbitrary local content safe to execute.
+
+</details>
+
+<details>
+<summary><b>How the repository builds, checks, and distributes the skill</b></summary>
+
+This is the maintainer path, separate from diagram creation. GitHub-hosted maintenance and optional network installation are not runtime requirements of an installed skill.
+
+```mermaid
+flowchart TB
+    REPO["Git repository<br/>Skill, wrappers, manifests, source assets,<br/>tests, and documentation"]
+    BUILD["Local Python asset builders<br/>Vendored icons + axonometric geometry<br/>Generate or check committed HTML/SVG assets"]
+    TEST["scripts/run-checks.py<br/>Reads .maintainer-policy.json<br/>Runs 77 local gates with Python and Git"]
+    CI["GitHub Actions CI<br/>Python 3.11 / 3.12<br/>Linux, Windows, and macOS"]
+    AUDIT["CI configuration audit<br/>zizmor action + pinned action revisions<br/>Dependabot proposes action updates"]
+    RELEASE["Auto Version Bump workflow<br/>Git version history + GitHub CLI<br/>Validated patch, authorized publish token"]
+    CATALOG["JSON plugin and marketplace manifests<br/>Claude/Copilot, Codex, Factory, Qoder"]
+    ZIP["build-openai-plugin-zip.py<br/>Reads the Git index and builds<br/>a bounded Codex/OpenAI ZIP with licenses"]
+    ACQUIRE["Optional acquisition tools<br/>Git, host CLIs, or npx skills<br/>The npx route uses Node.js"]
+    COPY["Reviewed skill-only copy<br/>skills/diagram-design-local/"]
+    INSTALL["Host installation<br/>Discovers instructions and local helpers"]
+    PAGES["Optional GitHub Pages gallery<br/>Publishes the static assets directory"]
+
+    REPO -->|local source assets| BUILD
+    BUILD -->|checked generated assets| REPO
+    REPO -->|local verification| TEST
+    REPO -->|push or pull request| CI
+    CI -->|runs declared checks across platforms| TEST
+    REPO -->|workflow changes| AUDIT
+    REPO -->|push to main| RELEASE
+    RELEASE -->|successful bump updates manifests| CATALOG
+    REPO -->|contains| CATALOG
+    CATALOG -->|optional marketplace install| INSTALL
+    REPO -->|staged package files| ZIP
+    ZIP -->|optional directory or manual installation| INSTALL
+    REPO -->|optional network acquisition| ACQUIRE
+    ACQUIRE -->|installs or updates files| INSTALL
+    REPO -->|copy reviewed files| COPY
+    COPY -->|offline installation| INSTALL
+    REPO -->|Pages workflow| PAGES
+```
+
+- **Asset generation:** [`build-icons.py`](scripts/build-icons.py) reads vendored SVGs with no download fallback. [`axonometry.py`](scripts/axonometry.py) supplies projection/geometry for the exploded and axonometric-plan example builders. Generated examples are committed; users do not need to run these builders.
+- **Verification:** the [gate policy](.maintainer-policy.json) covers packaging, docs/routing, local-only dependencies, accessibility, contrast, geometry, chart data, import/export behavior, and adversarial safety cases. [CI](.github/workflows/ci.yml) runs these checks across its matrix. There is no browser rendering or screenshot freshness check.
+- **Packaging:** [Claude/Copilot](.claude-plugin/plugin.json), [Codex](.codex-plugin/plugin.json), [Factory](.factory-plugin/plugin.json), and [Qoder](.qoder-plugin/plugin.json) share the same skill. Marketplace catalogs point at the repository root. Pi discovers `skills/` and `prompts/`. The [ZIP builder](scripts/build-openai-plugin-zip.py) packages the skill, listing assets, license, and privacy files; repository-only tests/builders are not installed with that ZIP.
+- **Acquisition:** native host CLIs, Git, or the optional `npx skills` installer can retrieve the package. The `npx` route uses Node.js and network access; a reviewed local copy requires neither. These acquisition tools are not dependencies of diagram creation.
+- **Release and publishing:** [auto-bump](.github/workflows/auto-bump.yml) is configured to update synchronized manifest versions after changes reach `main`; it requires valid version history and `AUTO_BUMP_TOKEN`. This diagram describes the configured path, not a claim that a particular workflow run succeeded. [Pages](.github/workflows/pages.yml) publishes the gallery when enabled. Neither workflow runs when a user simply makes a diagram.
+- **Documentation rendering:** these architecture views are editable Mermaid blocks rendered by the README host. Mermaid rendering is a documentation feature, not a dependency of the skill's Python tools or generated HTML/SVG.
+
+</details>
+
 Diagram Design Local is a locally focused fork of [Diagram Design by Cathryn Lavery / LittleMight](https://github.com/cathrynlavery/diagram-design), maintained here by [AndrewGodlewsky](https://github.com/AndrewGodlewsky). It keeps the editorial design system, 45 diagram types, and local import tools while removing browser automation, webfonts, website fetching, and animation.
 
 The skill and plugin are named `diagram-design-local`. The repository remains **`AndrewGodlewsky/Diagram-design2`**.
 
-[Install](#install) · [What changed](#what-changed-in-this-fork) · [Examples](#what-it-makes) · [Quickstart](#quickstart) · [Branding](#onboarding-make-it-look-like-your-brand) · [Import](#import-from-drawio-mermaid-or-excalidraw) · [Export](#export-to-svg) · [Contributing](#contributing)
+[Architecture](#how-it-works) · [Install](#install) · [What changed](#what-changed-in-this-fork) · [Examples](#what-it-makes) · [Quickstart](#quickstart) · [Branding](#onboarding-make-it-look-like-your-brand) · [Import](#import-from-drawio-mermaid-or-excalidraw) · [Export](#export-to-svg) · [Contributing](#contributing)
 
 ## What changed in this fork
 
